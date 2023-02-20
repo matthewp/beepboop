@@ -81,7 +81,7 @@ let Component = {
 };
 
 function createComponent(options) {
-  let component = create(Component, {
+  let component = Object.create(Component, {
     machine: {
       enumerable: true,
       value: create(options.machine, {
