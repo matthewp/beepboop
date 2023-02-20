@@ -81,6 +81,7 @@ let Component = {
 };
 
 function createComponent(options) {
+  let undef = () => ({ value: undefined });
   let component = Object.create(Component, {
     machine: {
       enumerable: true,
@@ -96,6 +97,10 @@ function createComponent(options) {
       enumerable: true,
       value: options.setup,
     },
+    root: undef(),
+    state: undef(),
+    service: undef(),
+    send: undef()
   });
   return component;
 }
