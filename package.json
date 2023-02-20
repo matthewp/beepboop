@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "description": "A framework build on Finite State Machines",
   "type": "module",
-  "main": "dom.js",
+  "exports": {
+    ".": "./dom.js"
+  },
   "types": "./dom.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
