@@ -1,6 +1,8 @@
 import { interpret, guard, reduce } from 'robot3';
 import { cellx as cell } from 'cellx';
 
+let create = (a, b) => Object.freeze(Object.create(a, b));
+
 function extraGuard(...args) {
   if (args.length === 1) {
     return guard(...args);
@@ -26,7 +28,7 @@ let Binding = {
   },
 };
 
-let TextBinding = Object.create(Binding, {
+let TextBinding = create(Binding, {
   set: {
     value(val) {
       this.root.textContent = val;
@@ -40,7 +42,7 @@ let TextBinding = Object.create(Binding, {
 });
 
 let createBinding = (base, root, selector) => 
-  Object.create(base, {
+  create(base, {
     root: {
       get() {
         return root.querySelector(selector);
@@ -79,10 +81,10 @@ let Component = {
 };
 
 function createComponent(options) {
-  let component = Object.create(Component, {
+  let component = create(Component, {
     machine: {
       enumerable: true,
-      value: Object.create(options.machine, {
+      value: create(options.machine, {
         context: {
           value(props) {
             return component.contextFn(props);
