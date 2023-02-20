@@ -1,6 +1,6 @@
 declare module '@matthewp/beepboop' {
-  import type { Machine, MachineState, Reducer, guard as baseGuard } from 'robot3';
-  import type { Cell, cell } from 'cellx';
+  import type { Machine, MachineState, Reducer, Guard, GuardFunction } from 'robot3';
+  import type { Cell, cellx } from 'cellx';
 
   export type Binding = {
     updateOn(cell: Cell): void;
@@ -15,7 +15,7 @@ declare module '@matthewp/beepboop' {
 
   export type SetupArgs<R, K> = {
     props: Record<string, any>;
-    cell: typeof cell;
+    cell: typeof cellx;
     state: Cell<{
       name: K;
       value: MachineState;
@@ -31,7 +31,7 @@ declare module '@matthewp/beepboop' {
     setup(args: SetupArgs<R, K>): Record<string, Cell>;
   };
 
-  export function createComponent<S = {}, C = {}, K = string, R extends HTMLElement>(args: CreateComponentArgs<S, C, K, R>): Component<R>;
+  export function createComponent<S = {}, C = {}, K = string, R extends HTMLElement = HTMLElement>(args: CreateComponentArgs<S, C, K, R>): Component<R>;
 
   // Assign
   export type AssignFunction<T, C, E> = (current: T, event: E, context: C) => T;
@@ -39,9 +39,8 @@ declare module '@matthewp/beepboop' {
 
   
   // Guard
-  export type BaseGuard = typeof baseGuard;
-  function NamedGuard<T extends string, C, E>(guardFunction?: GuardFunction<T, E, C> | undefined): Guard<C, E>;
-  export const guard: BaseGuard | typeof NamedGuard;
+  type NamedGuardFunction<T extends string, C, E> = (current: T, event: E, context: C) => boolean;
+  export function guard<T extends string = string, C = {}, E = {}>(guardFunction?: NamedGuardFunction<T, C, E> | GuardFunction<E, C> | undefined): Guard<C, E>;
 
   export {
     action,
