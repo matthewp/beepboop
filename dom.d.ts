@@ -11,6 +11,7 @@ declare module '@matthewp/beepboop' {
   export type Component<R extends HTMLElement> = {
     mount(root: R): void;
     unmount(): void;
+    send(event: string | { type: string; }): void;
   };
 
   export type SetupArgs<R, K> = {
@@ -28,7 +29,7 @@ declare module '@matthewp/beepboop' {
   export type CreateComponentArgs<S, C, K, R> = {
     machine: Machine<S, C, K>;
 
-    setup(args: SetupArgs<R, K>): Record<string, Cell>;
+    setup(this: Component<R>, args: SetupArgs<R, K>): Record<string, Cell>;
   };
 
   export function createComponent<S = {}, C = {}, K = string, R extends HTMLElement = HTMLElement>(args: CreateComponentArgs<S, C, K, R>): Component<R>;
