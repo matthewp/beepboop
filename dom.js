@@ -81,7 +81,7 @@ let Component = {
 };
 
 function createComponent(options) {
-  let undef = () => ({ value: undefined });
+  let undef = () => ({ value: undefined, enumerable: true, writable: true });
   let component = Object.create(Component, {
     machine: {
       enumerable: true,
