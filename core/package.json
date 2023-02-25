@@ -1,6 +1,6 @@
 {
   "name": "@matthewp/beepboop",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A framework built on Finite State Machines",
   "type": "module",
   "exports": {
