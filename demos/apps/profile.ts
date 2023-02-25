@@ -1,24 +1,19 @@
 import { bb } from '@matthewp/beepboop';
 
-let ui = bb.ui().selectors(['#name', 'input'] as const)
-
 let machine = bb
   .selectors(['#name', 'input'] as const)
-  .model(() => ({
-    name: '',
-  }))
+  .model({
+    name: bb.string()
+  })
   .states(['idle', 'updating'] as const)
   .events('idle', ['change'] as const)
   .transition('idle', 'change', 'updating')
   .immediate(
     'updating',
     'idle',
-    bb.assign('name', ({ domEvent }) => domEvent.target.value)
-  );
-
-let blueprint = bb
-  .connect(machine, ui)
+    bb.assign('name', ({ domEvent }) => (domEvent.target as HTMLInputElement).value)
+  )
+  .on('input', 'input', 'change')
   .text('#name', 'name')
-  .on('input', 'input', 'change');
 
-export default bb.app(blueprint);
+export default bb.app(machine);

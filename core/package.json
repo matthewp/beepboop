@@ -11,13 +11,19 @@
     "lib"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test:types": "wireit",
+    "test": "wireit"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/matthewp/beepboop.git"
   },
-  "keywords": ["FSM", "State charts", "framework", "DOM"],
+  "keywords": [
+    "FSM",
+    "State charts",
+    "framework",
+    "DOM"
+  ],
   "author": "Matthew Phillips",
   "license": "BSD-2-Clause",
   "bugs": {
@@ -26,5 +32,21 @@
   "homepage": "https://github.com/matthewp/beepboop#readme",
   "dependencies": {
     "robot3": "^0.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.17.10",
+    "esbuild-register": "^3.4.2",
+    "expect-type": "^0.15.0",
+    "typescript": "^4.9.5"
+  },
+  "wireit": {
+    "test:types": {
+      "command": "tsc -p test/types/tsconfig.json",
+      "files": ["test/types/**/*", "lib/**/*"],
+      "output": []
+    },
+    "test": {
+      "dependencies": ["test:types"]
+    }
   }
 }
