@@ -1,6 +1,6 @@
 {
   "name": "@matthewp/beepboop",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A framework built on Finite State Machines",
   "type": "module",
   "exports": {
@@ -42,11 +42,16 @@
   "wireit": {
     "test:types": {
       "command": "tsc -p test/types/tsconfig.json",
-      "files": ["test/types/**/*", "lib/**/*"],
+      "files": [
+        "test/types/**/*",
+        "lib/**/*"
+      ],
       "output": []
     },
     "test": {
-      "dependencies": ["test:types"]
+      "dependencies": [
+        "test:types"
+      ]
     }
   }
 }
