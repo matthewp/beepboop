@@ -1,0 +1,20 @@
+{
+  "name": "@matthewp/beepboop-demos",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "web-dev-server -c web-dev-server.config.mjs"
+  },
+  "keywords": [],
+  "author": "Matthew Phillips",
+  "license": "BSD-2-Clause",
+  "devDependencies": {
+    "@web/dev-server": "^0.1.35",
+    "@web/dev-server-esbuild": "^0.3.3"
+  },
+  "dependencies": {
+    "@matthewp/beepboop": "^0.0.5"
+  }
+}
