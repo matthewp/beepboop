@@ -1,6 +1,7 @@
 <html lang="en">
 <head>
   <title>Demos</title>
+  <link rel="stylesheet" href="./styles.css">
   <script type="module" src="./apps/all.ts"></script>
 </head>
 <body>
@@ -18,8 +19,10 @@
 <div id="profile-app">
   <h2>User Profile</h2>
 
-  <div>Name: <strong id="name"></strong></div>
-  <input type="text" placeholder="enter your name" />
+  <div>Name: <strong id="name">user</strong></div>
+  <div>Age: <strong id="age">75</strong></div>
+  <input name="name" type="text" placeholder="enter your name" value="user">
+  <input name="age" type="number" placeholder="enter your age" value="75">
 </div>
 
 <hr />

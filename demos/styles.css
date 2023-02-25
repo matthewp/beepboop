@@ -1,0 +1,60 @@
+h1,
+h2 {
+  font-family: Lato;
+}
+
+hr {
+  border: none;
+  border-top: 2px dashed tomato;
+  margin-block: 2rem;
+}
+
+#docs-app {
+  display: grid;
+  grid-template-areas:
+    'a a a'
+    'b b c';
+  grid-template-columns: 1fr 1fr max-content;
+}
+
+#docs-app h2 {
+  grid-area: a;
+}
+
+#docs-app article {
+  grid-area: b;
+  height: 25em;
+  overflow: scroll;
+}
+
+#docs-app aside {
+  grid-area: c;
+  margin-inline: 3rem;
+}
+
+#docs-app aside h3 {
+  text-align: center;
+}
+
+#docs-app aside ul,
+#docs-app aside li {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+#docs-app aside li {
+  margin-block: 0.3rem;
+}
+
+#docs-app aside li a,
+#docs-app aside li a:visited {
+  color: black;
+  display: block;
+  padding: 0.1rem 0.4rem;
+}
+
+#docs-app aside li.active a {
+  background-color: goldenrod;
+  font-weight: 700;
+}

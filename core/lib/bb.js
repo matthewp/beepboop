@@ -20,11 +20,16 @@ let create = (a, b) => Object.freeze(Object.create(a, b));
 let mergeArray = (a, b) => (Array.isArray(a) ? a.concat([b]) : [b]);
 let h = (fn) => (_, ev) => fn(ev);
 
+let BindingType = {};
+let TextBinding = create(BindingType, {
+  get: valueEnumerable(el => el.textContent),
+  set: valueEnumerable((el, value) => el.textContent = value),
+});
+
 let mutation = (selector, m) => (root, value) => {
   let el = root.querySelector(selector);
-  return m(el, value);
+  return m.set(el, value);
 };
-let mutateText = (el, value) => (el.textContent = value);
 let mutateAction = (fns, key) =>
   action((ctx) => {
     for (let fn of fns) {
@@ -32,7 +37,18 @@ let mutateAction = (fns, key) =>
     }
   });
 
-// Blueprint
+// Schema modeling
+let StringType = {
+  coerce: raw => ''+raw
+};
+let BooleanType = {
+  coerce: raw => Boolean(raw)
+};
+let NumberType = {
+  coerce: raw => Number(raw)
+};
+
+// Blueprint TODO remove
 let Blueprint = {
   mutate(selector, mutator) {
     throw new Error(`Not yet implemented`);
@@ -65,6 +81,7 @@ function createBlueprint(machine, ui, effects, events) {
   });
 }
 
+// TODO remove
 let UI = {
   selectors() {
     return this;
@@ -85,9 +102,9 @@ class Event {
 }
 
 function listenToEvents(app, root) {
-  for (const [selector, defns] of Object.entries(app.events)) {
-    for (const el of root.querySelectorAll(selector)) {
-      for (const [domEvent, machineEvent] of defns) {
+  for (let [selector, defns] of Object.entries(app.events)) {
+    for (let el of root.querySelectorAll(selector)) {
+      for (let [domEvent, machineEvent] of defns) {
         el.addEventListener(domEvent, (ev) => {
           // TODO unlisten
           app.service?.send(new Event(machineEvent, ev, app.service));
@@ -114,14 +131,30 @@ let App = {
   },
 };
 
-function build({ machine: builder, effects }) {
+function createModel(root, schema, bindings) {
+  let model = {};
+  // TODO this can be compiled ahead of time
+  for(const [key, type] of Object.entries(schema)) {
+    let b = bindings[key];
+    if(typeof b !== 'undefined') {
+      let el = root.querySelector(b.selector);
+      model[key] = type.coerce(b.get(el));
+    }
+  }
+  return model;
+}
+
+const buildModelFn = (schema, bindings) => root => createModel(root, schema, bindings);
+
+function build(builder) {
+  let effects = builder.effects;
   let machineDefn = {};
   for (let name in builder.states) {
     let state = builder.states[name];
     let stateArgs = [];
     for (let evName in state.events) {
       let eventDetails = state.events[evName];
-      for (const [dest, extras] of eventDetails) {
+      for (let [dest, extras] of eventDetails) {
         stateArgs.push(transition(evName, dest, ...extras));
       }
     }
@@ -142,10 +175,10 @@ function build({ machine: builder, effects }) {
     machineDefn[name] = createState(...stateArgs);
   }
 
-  let modelFn = builder.model ?? (() => ({}));
+  let modelFn = buildModelFn(builder.model, builder.bindings);
   let machine = createMachine(builder.initial, machineDefn, (root) => {
     return {
-      model: modelFn(),
+      model: modelFn(root),
       root,
     };
   });
@@ -157,14 +190,15 @@ function extendState(bb, state) {
   return desc.value;
 }
 
-function createBuilder(initial, model, selectors, states) {
-  if (arguments.length < 4) {
-    throw new Error('ops');
-  }
+function createBuilder(initial, model, selectors, states, effects, events, bindings) {
   return Object.create(Builder, {
     initial: valueEnumerable(initial),
     model: valueEnumerable(model),
+    selectors: valueEnumerable(selectors),
     states: valueEnumerable(states),
+    effects: valueEnumerable(effects),
+    events: valueEnumerable(events),
+    bindings: valueEnumerable(bindings)
   });
 }
 
@@ -173,7 +207,10 @@ function appendStates(builder, states) {
     builder.initial,
     builder.model,
     builder.selectors,
-    states
+    states,
+    builder.events,
+    builder.effects,
+    builder.bindings,
   );
 }
 
@@ -187,20 +224,29 @@ let AssignType = {
 
 let Builder = {
   selectors(selectors) {
-    return createBuilder(this.initial, this.model, selectors, this.states);
+    return createBuilder(this.initial, this.model, selectors, this.states, this.effects, this.events, this.bindings);
   },
-  model(model) {
-    return createBuilder(this.initial, model, this.selectors, this.states);
+  model(schema) {
+    return createBuilder(this.initial, schema, this.selectors, this.states, this.effects, this.events, this.bindings);
+  },
+  string() {
+    return create(StringType);
+  },
+  number() {
+    return create(NumberType);
+  },
+  boolean() {
+    return create(BooleanType)
   },
   states(names) {
-    const desc = {};
+    let desc = {};
     for (let name of names) {
       desc[name] = {
         events: {},
         immediates: {},
       };
     }
-    return createBuilder(names[0], this.model, this.selectors, desc);
+    return createBuilder(names[0], this.model, this.selectors, desc, this.effects, this.events, this.bindings);
   },
   events(state, events) {
     // TODO validate state exists
@@ -239,19 +285,28 @@ let Builder = {
       fn: valueEnumerable(fn),
     });
   },
-  ui() {
-    return createUI();
+  on(selector, domEvent, machineEvent) {
+    return createBuilder(this.initial, this.model, this.selectors, this.states, this.effects, {
+      ...this.events,
+      [selector]: mergeArray(this.effects[selector], [domEvent, machineEvent]),
+    }, this.bindings);
   },
-  app(blue) {
-    return Object.create(App, {
-      machine: valueEnumerable(build(blue)),
-      events: valueEnumerable(blue.events),
-      service: valueEnumerableWritable(undefined),
+  text(selector, key) {
+    return createBuilder(this.initial, this.model, this.selectors, this.states, {
+      ...this.effects,
+      [key]: mergeArray(this.effects[key], mutation(selector, TextBinding)),
+    }, this.events, {
+      ...this.bindings,
+      [key]: create(TextBinding, { selector: valueEnumerable(selector) })
     });
   },
-  connect(machine, ui) {
-    return createBlueprint(machine, ui);
-  },
+  app(builder) {
+    return Object.create(App, {
+      machine: valueEnumerable(build(builder)),
+      events: valueEnumerable(builder.events),
+      service: valueEnumerableWritable(undefined),
+    });
+  }
 };
 
 /**
