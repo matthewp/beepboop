@@ -6,18 +6,12 @@ let machine = bb
     name: bb.string(),
     age: bb.number()
   })
-  .states(['idle', 'updating-name', 'updating-age'] as const)
+  .states(['idle'] as const)
   .events('idle', ['change-name', 'change-age'] as const)
-  .transition('idle', 'change-name', 'updating-name')
-  .transition('idle', 'change-age', 'updating-age')
-  .immediate(
-    'updating-name',
-    'idle',
+  .transition('idle', 'change-name', 'idle',
     bb.assign('name', ({ domEvent }) => (domEvent.target as HTMLInputElement).value)
   )
-  .immediate(
-    'updating-age',
-    'idle',
+  .transition('idle', 'change-age', 'idle',
     bb.assign('age', ({ domEvent }) => (domEvent.target as HTMLInputElement).valueAsNumber)
   )
   .on('[name=name]', 'input', 'change-name')

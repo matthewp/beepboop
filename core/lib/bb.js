@@ -155,7 +155,17 @@ function build(builder) {
     for (let evName in state.events) {
       let eventDetails = state.events[evName];
       for (let [dest, extras] of eventDetails) {
-        stateArgs.push(transition(evName, dest, ...extras));
+        let args = [];
+        for (let type of extras) {
+          if (AssignType.isPrototypeOf(type)) {
+            let key = type.key;
+            args.push(reduce(type.reducer.bind(type)));
+            args.push(mutateAction(effects[key], key));
+          } else {
+            args.push(type);
+          }
+        }
+        stateArgs.push(transition(evName, dest, ...args));
       }
     }
     for (let dest in state.immediates) {

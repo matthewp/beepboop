@@ -40,6 +40,7 @@ type GetImmediates<R extends RawShape, S extends GetStates<R>> =
   R['states'][S]['immediates'] extends undefined ? [] : R['states'][S]['immediates'];
 type GetTransitions<R extends RawShape, S extends GetStates<R>, E extends GetEvents<R, S>> = R['states'][S]['events'][E];
 type GetModelKeys<R extends RawShape> = keyof R['model'] extends string ? keyof R['model'] : never;
+type GetModelKeyType<R extends RawShape, K extends GetModelKeys<R>> = R['model'][K][typeof underlyingTypeSymbol];
 
 // Setters
 type AddSelector<R extends RawShape, S extends string> = util.extendShape<R, {
@@ -72,8 +73,9 @@ type AddTransition<R extends RawShape, S extends GetStates<R>, E extends GetEven
 type AddImmediate<R extends RawShape,S extends GetStates<R>, D extends string> = AddState<R, S, GetEvents<R, S>, [...GetImmediates<R, S>, D]>;
 
 // Extras
-// // Extras
+declare const GUARD_BRAND: unique symbol;
 type GuardType<R extends RawShape> = util.brand<{
+  [GUARD_BRAND]: R;
   fn: (model: R['model']) => boolean;
 }, 'guard'>;
 
@@ -99,7 +101,9 @@ type ModelSchema = {
 type MachineEvent<R extends RawShape> = {
   type: GetAllEvents<R>;
   domEvent: MouseEvent;
-  model: {};
+  model: {
+    [k in GetModelKeys<R>]: GetModelKeyType<R, k>
+  };
   state: GetStates<R>;
 };
 
@@ -159,7 +163,7 @@ type BuilderType<R extends RawShape> = {
   ): ReduceType<RR>;
   assign<RR extends R, K extends GetModelKeys<RR> = GetModelKeys<RR>>(
     key: K,
-    fn: (event: MachineEvent<RR>) => RR['model'][K][typeof underlyingTypeSymbol]
+    fn: (event: MachineEvent<RR>) => GetModelKeyType<RR, K>
   ): ReduceType<RR>;
 
   app(builder: R): App;
