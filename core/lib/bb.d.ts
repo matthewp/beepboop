@@ -88,11 +88,13 @@ type ExtraType<R extends RawShape> = GuardType<R> | ReduceType<R>;
 
 // Data model
 declare const underlyingTypeSymbol: unique symbol;
+type BBType<T = any> = util.brand<{ [underlyingTypeSymbol]: T; }, 'bbtype'>;
 type BBString = util.brand<{ [underlyingTypeSymbol]: string; }, 'bbstring'>;
 type BBNumber = util.brand<{ [underlyingTypeSymbol]: number; }, 'bbnumber'>;
 type BBBool = util.brand<{ [underlyingTypeSymbol]: boolean; }, 'bbbool'>;
 type BBObject = util.brand<{ [underlyingTypeSymbol]: {}; }, 'bbobj'>;
-type BBSchemaType = BBString | BBNumber | BBBool | BBObject;
+type BBArray = util.brand<{ [underlyingTypeSymbol]: Array<any> }, 'bbarray'>;
+type BBSchemaType = BBString | BBNumber | BBBool | BBObject | BBArray | BBType;
 type ModelSchema = {
   [k: string]: BBSchemaType
 };
@@ -105,6 +107,7 @@ type MachineEvent<R extends RawShape> = {
     [k in GetModelKeys<R>]: GetModelKeyType<R, k>
   };
   state: GetStates<R>;
+  root: HTMLElement;
 };
 
 // App
@@ -126,6 +129,10 @@ type BuilderType<R extends RawShape> = {
     sel: S,
     modelProp: K
   ): BuilderType<R>;
+  effect<K extends GetModelKeys<R>>(
+    key: K,
+    fn: (event: MachineEvent<R>) => void
+  ): BuilderType<R>;
 
   // Data model
   model<MS extends ModelSchema>(schema: MS): BuilderType<AddModel<R, MS>>;
@@ -133,6 +140,8 @@ type BuilderType<R extends RawShape> = {
   number(): BBNumber;
   boolean(): BBBool;
   object(o: { [k: string]: BBSchemaType }): BBObject;
+  array(arr: BBSchemaType): BBArray;
+  type<T>(): BBType<T>;
 
   // FSM
   states<S extends readonly string[]>(

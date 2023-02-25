@@ -30,10 +30,11 @@ let mutation = (selector, m) => (root, value) => {
   let el = root.querySelector(selector);
   return m.set(el, value);
 };
+let effect = fn => (_r, _v, ev) => fn(ev);
 let mutateAction = (fns, key) =>
-  action((ctx) => {
+  action((ctx, ev) => {
     for (let fn of fns) {
-      fn(ctx.root, ctx.model[key]);
+      fn(ctx.root, ctx.model[key], ev);
     }
   });
 
@@ -47,57 +48,20 @@ let BooleanType = {
 let NumberType = {
   coerce: raw => Number(raw)
 };
-
-// Blueprint TODO remove
-let Blueprint = {
-  mutate(selector, mutator) {
-    throw new Error(`Not yet implemented`);
-  },
-  text(selector, key) {
-    return createBlueprint(
-      this.machine,
-      this.ui,
-      {
-        ...this.effects,
-        [key]: mergeArray(this.effects[key], mutation(selector, mutateText)),
-      },
-      this.events
-    );
-  },
-  on(selector, domEvent, machineEvent) {
-    return createBlueprint(this.machine, this.ui, this.effects, {
-      ...this.events,
-      [selector]: mergeArray(this.effects[selector], [domEvent, machineEvent]),
-    });
-  },
-};
-
-function createBlueprint(machine, ui, effects, events) {
-  return Object.create(Blueprint, {
-    machine: valueEnumerable(machine),
-    ui: valueEnumerable(ui),
-    effects: valueEnumerable(effects ?? {}),
-    events: valueEnumerable(events ?? {}),
-  });
-}
-
-// TODO remove
-let UI = {
-  selectors() {
-    return this;
-  },
-};
-
-function createUI() {
-  return create(UI);
-}
+let ArrayType = {};
 
 class Event {
-  constructor(type, domEvent, service) {
+  constructor(type, domEvent, root, service) {
     this.type = type;
     this.domEvent = domEvent;
-    this.model = service.context.model;
-    this.state = service.machine.current;
+    this.root = root;
+    this.service = service;
+  }
+  get model() {
+    return this.service.context.model;
+  }
+  get state() {
+    return this.service.machine.current;
   }
 }
 
@@ -107,7 +71,7 @@ function listenToEvents(app, root) {
       for (let [domEvent, machineEvent] of defns) {
         el.addEventListener(domEvent, (ev) => {
           // TODO unlisten
-          app.service?.send(new Event(machineEvent, ev, app.service));
+          app.service?.send(new Event(machineEvent, ev, root, app.service));
         });
       }
     }
@@ -116,6 +80,7 @@ function listenToEvents(app, root) {
 
 let App = {
   mount(selector) {
+    // TODO this should create an instance of app
     let el =
       typeof selector === 'string'
         ? document.querySelector(selector)
@@ -125,7 +90,8 @@ let App = {
       () => {
         // TODO state change effects
       },
-      el
+      el,
+      new Event(null, null, el, null)
     );
     listenToEvents(this, el);
   },
@@ -160,7 +126,9 @@ function build(builder) {
           if (AssignType.isPrototypeOf(type)) {
             let key = type.key;
             args.push(reduce(type.reducer.bind(type)));
-            args.push(mutateAction(effects[key], key));
+            if(typeof effects[key] !== 'undefined') {
+              args.push(mutateAction(effects[key], key));
+            }
           } else {
             args.push(type);
           }
@@ -169,18 +137,27 @@ function build(builder) {
       }
     }
     for (let dest in state.immediates) {
-      let extras = state.immediates[dest];
-      let args = [];
-      for (let type of extras) {
-        if (AssignType.isPrototypeOf(type)) {
-          let key = type.key;
-          args.push(reduce(type.reducer.bind(type)));
-          args.push(mutateAction(effects[key], key));
-        } else {
-          args.push(type);
+      for(let extras of state.immediates[dest]) {
+        let args = [];
+        if(name === builder.initial) {
+          args.push(reduce(function(ctx, ev) {
+            ev.service = this;
+            return ctx;
+          }));
         }
+        for (let type of extras) {
+          if (AssignType.isPrototypeOf(type)) {
+            let key = type.key;
+            args.push(reduce(type.reducer.bind(type)));
+            if(typeof effects[key] !== 'undefined') {
+              args.push(mutateAction(effects[key], key));
+            }
+          } else {
+            args.push(type);
+          }
+        }
+        stateArgs.push(immediate(dest, ...args));
       }
-      stateArgs.push(immediate(dest, ...args));
     }
     machineDefn[name] = createState(...stateArgs);
   }
@@ -200,15 +177,15 @@ function extendState(bb, state) {
   return desc.value;
 }
 
-function createBuilder(initial, model, selectors, states, effects, events, bindings) {
+function createBuilder(initial, model, selectors, states, effects, evMap, bindings) {
   return Object.create(Builder, {
     initial: valueEnumerable(initial),
     model: valueEnumerable(model),
     selectors: valueEnumerable(selectors),
     states: valueEnumerable(states),
-    effects: valueEnumerable(effects),
-    events: valueEnumerable(events),
-    bindings: valueEnumerable(bindings)
+    effects: valueEnumerable(effects ?? {}),
+    evMap: valueEnumerable(evMap ?? {}),
+    bindings: valueEnumerable(bindings ?? {})
   });
 }
 
@@ -218,7 +195,7 @@ function appendStates(builder, states) {
     builder.model,
     builder.selectors,
     states,
-    builder.events,
+    builder.evMap,
     builder.effects,
     builder.bindings,
   );
@@ -234,10 +211,10 @@ let AssignType = {
 
 let Builder = {
   selectors(selectors) {
-    return createBuilder(this.initial, this.model, selectors, this.states, this.effects, this.events, this.bindings);
+    return createBuilder(this.initial, this.model, selectors, this.states, this.effects, this.evMap, this.bindings);
   },
   model(schema) {
-    return createBuilder(this.initial, schema, this.selectors, this.states, this.effects, this.events, this.bindings);
+    return createBuilder(this.initial, schema, this.selectors, this.states, this.effects, this.evMap, this.bindings);
   },
   string() {
     return create(StringType);
@@ -246,8 +223,10 @@ let Builder = {
     return create(NumberType);
   },
   boolean() {
-    return create(BooleanType)
+    return create(BooleanType);
   },
+  array() { return create(ArrayType); },
+  type() { return undefined; },
   states(names) {
     let desc = {};
     for (let name of names) {
@@ -256,7 +235,7 @@ let Builder = {
         immediates: {},
       };
     }
-    return createBuilder(names[0], this.model, this.selectors, desc, this.effects, this.events, this.bindings);
+    return createBuilder(names[0], this.model, this.selectors, desc, this.effects, this.evMap, this.bindings);
   },
   events(state, events) {
     // TODO validate state exists
@@ -271,7 +250,7 @@ let Builder = {
   },
   immediate(state, dest, ...args) {
     let desc = extendState(this, state);
-    desc.immediates[dest] = args;
+    desc.immediates[dest] = mergeArray(desc.immediates[dest], args);
     return appendStates(this, {
       ...this.states,
       [state]: desc,
@@ -297,23 +276,29 @@ let Builder = {
   },
   on(selector, domEvent, machineEvent) {
     return createBuilder(this.initial, this.model, this.selectors, this.states, this.effects, {
-      ...this.events,
-      [selector]: mergeArray(this.effects[selector], [domEvent, machineEvent]),
+      ...this.evMap,
+      [selector]: mergeArray(this.evMap[selector], [domEvent, machineEvent]),
     }, this.bindings);
   },
   text(selector, key) {
     return createBuilder(this.initial, this.model, this.selectors, this.states, {
       ...this.effects,
       [key]: mergeArray(this.effects[key], mutation(selector, TextBinding)),
-    }, this.events, {
+    }, this.evMap, {
       ...this.bindings,
       [key]: create(TextBinding, { selector: valueEnumerable(selector) })
     });
   },
+  effect(key, fn) {
+    return createBuilder(this.initial, this.model, this.selectors, this.states, {
+      ...this.effects,
+      [key]: mergeArray(this.effects[key], effect(fn)),
+    }, this.evMap, this.bindings);
+  },
   app(builder) {
     return Object.create(App, {
       machine: valueEnumerable(build(builder)),
-      events: valueEnumerable(builder.events),
+      events: valueEnumerable(builder.evMap),
       service: valueEnumerableWritable(undefined),
     });
   }
