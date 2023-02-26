@@ -29,6 +29,10 @@ let AttrBinding = create(BindingType, {
   get: valueEnumerable(function(el) { return el.getAttribute(this.attrName) }),
   set: valueEnumerable(function(el, value) { return el.setAttribute(this.attrName, value) }),
 });
+let ClassBinding = create(BindingType, {
+  get: valueEnumerable(function(el) { return el.classList.contains(this.className) }),
+  set: valueEnumerable(function(el, value) { return el.classList.toggle(this.className, value) }),
+});
 
 let mutation = (selector, m) => (root, value) => {
   let el = root.querySelector(selector);
@@ -299,6 +303,11 @@ let Builder = {
   attr(selector, attrName, key) {
     return addDOMBinding(this, selector, key, Object.create(AttrBinding, {
       attrName: valueEnumerable(attrName)
+    }));
+  },
+  class(selector, className, key) {
+    return addDOMBinding(this, selector, key, Object.create(ClassBinding, {
+      className: valueEnumerable(className)
     }));
   },
   effect(key, fn) {

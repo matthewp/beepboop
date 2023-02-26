@@ -1,3 +1,29 @@
+body {
+  --fg: black;
+  --bg: white;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body.dark-mode {
+  --bg: #282a36;
+  --fg: #f8f8f2;
+}
+
+.brightness-toggle {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+}
+
+.brightness-toggle button {
+  border: 0px;
+  padding: .2rem;
+  line-height: 35px;
+  background: var(--bg);
+  font-size: 25px;
+}
+
 h1,
 h2 {
   font-family: Lato;
@@ -49,7 +75,7 @@ hr {
 
 #docs-app aside li a,
 #docs-app aside li a:visited {
-  color: black;
+  color: var(--fg);
   display: block;
   padding: 0.1rem 0.4rem;
 }

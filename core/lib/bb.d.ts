@@ -134,6 +134,11 @@ type BuilderType<R extends RawShape> = {
     attrName: string,
     modelProp: K
   ): BuilderType<R>;
+  class<S extends GetSelectors<R> = GetSelectors<R>, K extends GetModelKeys<R> = GetModelKeys<R>>(
+    sel: S,
+    className: string,
+    modelProp: K
+  ): BuilderType<R>;
   effect<K extends GetModelKeys<R>>(
     key: K,
     fn: (event: MachineEvent<R>) => void
