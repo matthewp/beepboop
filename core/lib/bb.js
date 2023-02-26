@@ -25,6 +25,10 @@ let TextBinding = create(BindingType, {
   get: valueEnumerable(el => el.textContent),
   set: valueEnumerable((el, value) => el.textContent = value),
 });
+let AttrBinding = create(BindingType, {
+  get: valueEnumerable(function(el) { return el.getAttribute(this.attrName) }),
+  set: valueEnumerable(function(el, value) { return el.setAttribute(this.attrName, value) }),
+});
 
 let mutation = (selector, m) => (root, value) => {
   let el = root.querySelector(selector);
@@ -209,6 +213,15 @@ let AssignType = {
   },
 };
 
+let addDOMBinding = (b, selector, key, BindingType) => 
+  createBuilder(b.initial, b.model, b.selectors, b.states, {
+    ...b.effects,
+    [key]: mergeArray(b.effects[key], mutation(selector, BindingType)),
+  }, b.evMap, {
+    ...b.bindings,
+    [key]: create(BindingType, { selector: valueEnumerable(selector) })
+  });
+
 let Builder = {
   selectors(selectors) {
     return createBuilder(this.initial, this.model, selectors, this.states, this.effects, this.evMap, this.bindings);
@@ -281,13 +294,12 @@ let Builder = {
     }, this.bindings);
   },
   text(selector, key) {
-    return createBuilder(this.initial, this.model, this.selectors, this.states, {
-      ...this.effects,
-      [key]: mergeArray(this.effects[key], mutation(selector, TextBinding)),
-    }, this.evMap, {
-      ...this.bindings,
-      [key]: create(TextBinding, { selector: valueEnumerable(selector) })
-    });
+    return addDOMBinding(this, selector, key, TextBinding);
+  },
+  attr(selector, attrName, key) {
+    return addDOMBinding(this, selector, key, Object.create(AttrBinding, {
+      attrName: valueEnumerable(attrName)
+    }));
   },
   effect(key, fn) {
     return createBuilder(this.initial, this.model, this.selectors, this.states, {
