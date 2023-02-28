@@ -22,7 +22,8 @@
     "FSM",
     "State charts",
     "framework",
-    "DOM"
+    "DOM",
+    "reactive"
   ],
   "author": "Matthew Phillips",
   "license": "BSD-2-Clause",
