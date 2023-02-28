@@ -4,6 +4,7 @@
   "description": "Monorepo package.",
   "private": "true",
   "scripts": {
+    "changeset": "changeset",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -22,6 +23,7 @@
     "demos"
   ],
   "devDependencies": {
+    "@changesets/cli": "^2.26.0",
     "esbuild": "^0.17.10",
     "serve": "^14.2.0",
     "wireit": "^0.9.5"
