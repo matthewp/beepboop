@@ -23,7 +23,8 @@
     "State charts",
     "framework",
     "DOM",
-    "reactive"
+    "reactive",
+    "SSR"
   ],
   "author": "Matthew Phillips",
   "license": "BSD-2-Clause",
