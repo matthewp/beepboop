@@ -2,7 +2,7 @@ import { bb } from '../../lib/bb.js';
 import { expectTypeOf } from 'expect-type';
 import { test } from 'node:test';
 
-test('events() infers states correct', () => {
+test('on() infers selectors correctly', () => {
   let machine = bb.selectors(['#count'] as const);
 
   type Type = typeof machine;
@@ -10,4 +10,3 @@ test('events() infers states correct', () => {
 
   expectTypeOf<OnParams[0]>().toMatchTypeOf<'#count'>();
 });
-

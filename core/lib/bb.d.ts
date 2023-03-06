@@ -1,3 +1,5 @@
+import { type GetSelectors as GetTemplateSelectors } from 'ts-types-html-parser';
+
 declare namespace util {
   type ArrayElement<ArrayType extends readonly unknown[]> =
     ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
@@ -120,6 +122,7 @@ type BuilderType<R extends RawShape> = {
   selectors<S extends readonly string[]>(
     sel: S
   ): BuilderType<AddSelector<R, util.ArrayElement<S>>>;
+  template<S extends string>(tmpl: S): BuilderType<AddSelector<R, GetTemplateSelectors<S> & {}>>;
   on<S extends GetSelectors<R> = GetSelectors<R>, E extends GetAllEvents<R> = GetAllEvents<R>>(
     sel: S,
     domEvent: string,
