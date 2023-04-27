@@ -33,7 +33,7 @@
   "homepage": "https://github.com/matthewp/beepboop#readme",
   "dependencies": {
     "robot3": "^0.4.0",
-    "ts-types-html-parser": "0.0.4"
+    "ts-types-html-parser": "0.0.5"
   },
   "devDependencies": {
     "esbuild": "^0.17.10",

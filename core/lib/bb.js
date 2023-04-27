@@ -227,6 +227,9 @@ let addDOMBinding = (b, selector, key, BindingType) =>
   });
 
 let Builder = {
+  template() {
+    throw new Error(`Not yet implemented.`);
+  },
   selectors(selectors) {
     return createBuilder(this.initial, this.model, selectors, this.states, this.effects, this.evMap, this.bindings);
   },
@@ -325,7 +328,4 @@ let Builder = {
   }
 };
 
-/**
- * @type {Builder}
- */
 export let bb = create(Builder);
