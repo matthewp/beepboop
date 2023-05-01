@@ -19,4 +19,4 @@ let machine = bb
   .text('#name', 'name')
   .text('#age', 'age');
 
-export default bb.app(machine);
+export default bb.actor(machine);

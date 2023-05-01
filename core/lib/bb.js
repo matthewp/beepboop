@@ -9,6 +9,9 @@ import {
   reduce,
 } from 'robot3';
 
+// Constants
+const BEEPBOOP_INITIAL_STATE = 'beepboop.initial';
+
 // Util
 let valueEnumerable = (value) => ({ enumerable: true, value });
 let valueEnumerableWritable = (value) => ({
@@ -20,7 +23,7 @@ let create = (a, b) => Object.freeze(Object.create(a, b));
 let mergeArray = (a, b) => (Array.isArray(a) ? a.concat([b]) : [b]);
 let h = (fn) => (_, ev) => fn(ev);
 
-let BindingType = {};
+let BindingType = { init: false };
 let TextBinding = create(BindingType, {
   get: valueEnumerable(el => el.textContent),
   set: valueEnumerable((el, value) => el.textContent = value),
@@ -33,6 +36,14 @@ let ClassBinding = create(BindingType, {
   get: valueEnumerable(function(el) { return el.classList.contains(this.className) }),
   set: valueEnumerable(function(el, value) { return el.classList.toggle(this.className, value) }),
 });
+let ActorBinding = create(BindingType, {
+  get: valueEnumerable(() => null),
+  set: valueEnumerable(function(el) {
+    // TODO unmount?
+    this.actor.mount(el);
+  }),
+  init: valueEnumerable(true)
+})
 
 let mutation = (selector, m) => (root, value) => {
   let el = root.querySelector(selector);
@@ -45,6 +56,17 @@ let mutateAction = (fns, key) =>
       fn(ctx.root, ctx.model[key], ev);
     }
   });
+let initAction = (allBindings) => {
+  let initBindings = allBindings.filter(binding => binding.init);
+  return action(({ root, model }) => {
+    initBindings.forEach(binding => {
+      for(let el of root.querySelectorAll(binding.selector)) {
+        // TODO obviously wrong
+        binding.set(el, model[binding.key]);
+      }
+    });
+  });
+};
 
 // Schema modeling
 let StringType = {
@@ -57,6 +79,9 @@ let NumberType = {
   coerce: raw => Number(raw)
 };
 let ArrayType = {};
+let AnyType = {
+  coerce: raw => raw
+};
 
 class Event {
   constructor(type, domEvent, root, service) {
@@ -86,7 +111,25 @@ function listenToEvents(app, root) {
   }
 }
 
-let App = {
+function listenToMutations(app, root) {
+  let observer = new MutationObserver(mutations => {
+    // Loop over added nodes and see if any bindings match.
+    for(let { addedNodes } of mutations) {
+      for(let addedNode of addedNodes) {
+        if(addedNode.nodeType !== 1) continue;
+        app.service.context.bindings.forEach(binding => {
+          for(let el of addedNode.querySelectorAll(binding.selector)) {
+            binding.set(el, app.service.context.model[binding.key]);
+          }
+        });
+      }
+    }
+  });
+  observer.observe(root, { childList: true, subtree: true });
+}
+
+let Actor = {
+  __proto__: AnyType,
   mount(selector) {
     // TODO this should create an instance of app
     let el =
@@ -102,6 +145,7 @@ let App = {
       new Event(null, null, el, null)
     );
     listenToEvents(this, el);
+    listenToMutations(this, el);
   },
 };
 
@@ -170,9 +214,15 @@ function build(builder) {
     machineDefn[name] = createState(...stateArgs);
   }
 
+  // Setup bindings
+  let allBindings = Object.values(builder.bindings);
+
+  machineDefn[BEEPBOOP_INITIAL_STATE] = createState(immediate(builder.initial, initAction(allBindings)));
+
   let modelFn = buildModelFn(builder.model, builder.bindings);
-  let machine = createMachine(builder.initial, machineDefn, (root) => {
+  let machine = createMachine(BEEPBOOP_INITIAL_STATE, machineDefn, (root) => {
     return {
+      bindings: allBindings,
       model: modelFn(root),
       root,
     };
@@ -223,7 +273,7 @@ let addDOMBinding = (b, selector, key, BindingType) =>
     [key]: mergeArray(b.effects[key], mutation(selector, BindingType)),
   }, b.evMap, {
     ...b.bindings,
-    [key]: create(BindingType, { selector: valueEnumerable(selector) })
+    [key]: create(BindingType, { key: valueEnumerable(key), selector: valueEnumerable(selector) })
   });
 
 let Builder = {
@@ -313,18 +363,27 @@ let Builder = {
       className: valueEnumerable(className)
     }));
   },
+  spawn(selector, key, actor) {
+    return addDOMBinding(this, selector, key, Object.create(ActorBinding, {
+      actor: valueEnumerable(actor)
+    }));
+  },
   effect(key, fn) {
     return createBuilder(this.initial, this.model, this.selectors, this.states, {
       ...this.effects,
       [key]: mergeArray(this.effects[key], effect(fn)),
     }, this.evMap, this.bindings);
   },
-  app(builder) {
-    return Object.create(App, {
-      machine: valueEnumerable(build(builder)),
-      events: valueEnumerable(builder.evMap),
-      service: valueEnumerableWritable(undefined),
-    });
+  actor(builder) {
+    if(builder) {
+      return Object.create(Actor, {
+        machine: valueEnumerable(build(builder)),
+        events: valueEnumerable(builder.evMap),
+        service: valueEnumerableWritable(undefined),
+      });
+    } else {
+      return create(Actor);
+    }
   }
 };
 

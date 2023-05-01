@@ -28,4 +28,4 @@ let machine = bb
   .on('#dec', 'click', 'decrement')
   .text('#count', 'count')
 
-export default bb.app(machine);
+export default bb.actor(machine);
