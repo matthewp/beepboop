@@ -96,7 +96,7 @@ type BBNumber = util.brand<{ [underlyingTypeSymbol]: number; }, 'bbnumber'>;
 type BBBool = util.brand<{ [underlyingTypeSymbol]: boolean; }, 'bbbool'>;
 type BBObject = util.brand<{ [underlyingTypeSymbol]: {}; }, 'bbobj'>;
 type BBArray = util.brand<{ [underlyingTypeSymbol]: Array<any> }, 'bbarray'>;
-type BBSchemaType = BBString | BBNumber | BBBool | BBObject | BBArray | BBType;
+type BBSchemaType = BBString | BBNumber | BBBool | BBObject | BBArray | BBType | Actor;
 type ModelSchema = {
   [k: string]: BBSchemaType
 };
@@ -112,9 +112,9 @@ type MachineEvent<R extends RawShape> = {
   root: HTMLElement;
 };
 
-// App
-type App = {
-  mount(rootSelector: string | HTMLElement): void;
+// Actor
+type Actor = {
+  mount(rootSelector: string | HTMLElement | Document): void;
 };
 
 type BuilderType<R extends RawShape> = {
@@ -145,6 +145,11 @@ type BuilderType<R extends RawShape> = {
   effect<K extends GetModelKeys<R>>(
     key: K,
     fn: (event: MachineEvent<R>) => void
+  ): BuilderType<R>;
+  spawn<S extends GetSelectors<R> = GetSelectors<R>, K extends GetModelKeys<R> = GetModelKeys<R>>(
+    sel: S,
+    key: K,
+    actor: Actor
   ): BuilderType<R>;
 
   // Data model
@@ -188,7 +193,8 @@ type BuilderType<R extends RawShape> = {
     fn: (event: MachineEvent<RR>) => GetModelKeyType<RR, K>
   ): ReduceType<RR>;
 
-  app(builder: R): App;
+  actor(builder: R): Actor;
+  actor(): Actor;
 }
 
 type Builder = BuilderType<{ states: {}, selectors: {}, model: {} }>;

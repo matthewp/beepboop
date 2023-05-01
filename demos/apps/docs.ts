@@ -52,4 +52,4 @@ let machine = bb
     ev.model.active.classList.add('active');
   });
 
-export default bb.app(machine);
+export default bb.actor(machine);

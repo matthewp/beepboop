@@ -22,4 +22,4 @@ let machine = bb
   .class('body', 'dark-mode', 'dark')
   .text('#darkmode', 'emoji')
 
-export default bb.app(machine);
+export default bb.actor(machine);
