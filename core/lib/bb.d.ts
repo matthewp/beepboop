@@ -119,7 +119,7 @@ type Actor = {
 
 type BuilderType<R extends RawShape> = {
   // UI
-  selectors<S extends readonly string[]>(
+  selectors<const S extends readonly string[]>(
     sel: S
   ): BuilderType<AddSelector<R, util.ArrayElement<S>>>;
   template<S extends string>(tmpl: S): BuilderType<AddSelector<R, GetTemplateSelectors<S> & {}>>;
@@ -162,10 +162,10 @@ type BuilderType<R extends RawShape> = {
   type<T>(): BBType<T>;
 
   // FSM
-  states<S extends readonly string[]>(
+  states<const S extends readonly string[]>(
     states: S
   ): BuilderType<AddState<R, util.ArrayElement<S>>>;
-  events<S extends GetStates<R>, E extends readonly string[]>(
+  events<S extends GetStates<R>, const E extends readonly string[]>(
     state: S,
     events: E
   ): BuilderType<AddEvent<R, S, util.ArrayElement<E>>>;
