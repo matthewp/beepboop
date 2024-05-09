@@ -1,5 +1,5 @@
 import { bb } from '../../lib/bb.js';
-import { expectTypeOf } from 'expect-type';
+//import { expectTypeOf } from 'expect-type';
 import { test } from 'node:test';
 
 test('assign() infers from model', () => {
