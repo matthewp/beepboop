@@ -1,5 +1,11 @@
 # @matthewp/beepboop
 
+## 0.0.13
+
+### Patch Changes
+
+- 7197f2e: Make selectors and events constants
+
 ## 0.0.12
 
 ### Patch Changes
