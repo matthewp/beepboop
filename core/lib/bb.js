@@ -104,7 +104,8 @@ class Event {
 
 function listenToEvents(app, root) {
   for (let [selector, defns] of Object.entries(app.events)) {
-    for (let el of root.querySelectorAll(selector)) {
+    let selected = selector === ':scope' ? [root] : root.querySelectorAll(selector);
+    for (let el of selected) {
       for (let [domEvent, machineEvent] of defns) {
         el.addEventListener(domEvent, (ev) => {
           // TODO unlisten
