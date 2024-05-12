@@ -36,6 +36,10 @@ let ClassBinding = create(BindingType, {
   get: valueEnumerable(function(el) { return el.classList.contains(this.className) }),
   set: valueEnumerable(function(el, value) { return el.classList.toggle(this.className, value) }),
 });
+let PropBinding = create(BindingType, {
+  get: valueEnumerable(function(el) { return el[this.propName] }),
+  set: valueEnumerable(function(el, value) { return (el[this.propName] = value) }),
+});
 let ActorBinding = create(BindingType, {
   get: valueEnumerable(() => null),
   set: valueEnumerable(function(el) {
@@ -361,6 +365,11 @@ let Builder = {
   class(selector, className, key) {
     return addDOMBinding(this, selector, key, Object.create(ClassBinding, {
       className: valueEnumerable(className)
+    }));
+  },
+  prop(selector, propName, key) {
+    return addDOMBinding(this, selector, key, Object.create(PropBinding, {
+      propName: valueEnumerable(propName)
     }));
   },
   spawn(selector, key, actor) {
