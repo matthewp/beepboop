@@ -1,5 +1,13 @@
 # @matthewp/beepboop
 
+## 0.0.14
+
+### Patch Changes
+
+- 2746611: Add .prop() helper
+
+  Adds a new helper for props.
+
 ## 0.0.13
 
 ### Patch Changes
