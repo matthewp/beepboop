@@ -2,4 +2,6 @@
 "@matthewp/beepboop": patch
 ---
 
-Support for props
+Add .prop() helper
+
+Adds a new helper for props.
