@@ -1,5 +1,11 @@
 # @matthewp/beepboop
 
+## 0.0.15
+
+### Patch Changes
+
+- 389f3aa: Support the :scope selector
+
 ## 0.0.14
 
 ### Patch Changes
