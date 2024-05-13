@@ -159,7 +159,7 @@ type BuilderType<R extends RawShape> = {
   boolean(): BBBool;
   object(o: { [k: string]: BBSchemaType }): BBObject;
   array(arr: BBSchemaType): BBArray;
-  type<T>(): BBType<T>;
+  type<T>(type?: T): BBType<T>;
 
   // FSM
   states<S extends readonly string[]>(
@@ -191,6 +191,10 @@ type BuilderType<R extends RawShape> = {
   assign<RR extends R, K extends GetModelKeys<RR> = GetModelKeys<RR>>(
     key: K,
     fn: (event: MachineEvent<RR>) => GetModelKeyType<RR, K>
+  ): ReduceType<RR>;
+  send<RR extends R, K extends GetModelKeys<RR> = GetModelKeys<RR>>(
+    key: K,
+    eventType?: string
   ): ReduceType<RR>;
 
   actor(builder: R): Actor;

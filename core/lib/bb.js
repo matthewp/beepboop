@@ -344,6 +344,11 @@ let Builder = {
       fn: valueEnumerable(fn),
     });
   },
+  send(key, eventType) {
+    return action((ctx, ev) => {
+      ctx.model[key].postMessage({ type: eventType })
+    })
+  },
   on(selector, domEvent, machineEvent) {
     return createBuilder(this.initial, this.model, this.selectors, this.states, this.effects, {
       ...this.evMap,
