@@ -1,7 +1,6 @@
 import { bb } from '@matthewp/beepboop';
 
 let machine = bb
-  .selectors(['body', '#darkmode'] as const)
   .model({
     mode: bb.string(),
     dark: bb.boolean(),
@@ -17,9 +16,14 @@ let machine = bb
     bb.assign('dark', ({ model }) => model.mode === 'dark'),
     bb.assign('emoji', ({ model }) => model.dark ? '🌛' : '☀️')
   )
-  .on('#darkmode', 'click', 'toggle')
-  .attr('body', 'data-mode', 'mode')
-  .class('body', 'dark-mode', 'dark')
-  .text('#darkmode', 'emoji')
+  .view(({ model, send }) => {
+    return (
+      <aside class="brightness-toggle">
+        <button type="button" id="darkmode" onClick={() => send('toggle')}>
+          {model.emoji}
+        </button>
+      </aside>
+    );
+  })
 
 export default bb.actor(machine);

@@ -115,6 +115,7 @@ type MachineEvent<R extends RawShape> = {
 // Actor
 type Actor = {
   mount(rootSelector: string | HTMLElement | Document): void;
+  view(): () => Component;
 };
 
 type BuilderType<R extends RawShape> = {
@@ -155,6 +156,12 @@ type BuilderType<R extends RawShape> = {
     sel: S,
     key: K,
     actor: Actor
+  ): BuilderType<R>;
+  view(
+    fn: (props: { 
+      model: { [k in GetModelKeys<R>]: GetModelKeyType<R, k> };
+      send: (event: GetAllEvents<R> | { type: GetAllEvents<R>; [key: string]: any }) => void;
+    }) => any
   ): BuilderType<R>;
 
   // Data model
@@ -205,6 +212,12 @@ type BuilderType<R extends RawShape> = {
 type Builder = BuilderType<{ states: {}, selectors: {}, model: {} }>;
 declare const bb: Builder;
 
+declare class  extends Component<{ actor: Actor }> {
+  draw(): void;
+}
+
 export {
-  bb
+  bb,
+  Component,
+  Component as View,
 };

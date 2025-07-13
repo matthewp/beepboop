@@ -8,6 +8,7 @@ import {
   interpret,
   reduce,
 } from 'robot3';
+import { createElement, render, Component as PreactComponent } from 'preact';
 
 // Constants
 const BEEPBOOP_INITIAL_STATE = 'beepboop.initial';
@@ -23,54 +24,20 @@ let create = (a, b) => Object.freeze(Object.create(a, b));
 let mergeArray = (a, b) => (Array.isArray(a) ? a.concat([b]) : [b]);
 let h = (fn) => (_, ev) => fn(ev);
 
-let BindingType = { init: false };
-let TextBinding = create(BindingType, {
-  get: valueEnumerable(el => el.textContent),
-  set: valueEnumerable((el, value) => el.textContent = value),
-});
-let AttrBinding = create(BindingType, {
-  get: valueEnumerable(function(el) { return el.getAttribute(this.attrName) }),
-  set: valueEnumerable(function(el, value) { return el.setAttribute(this.attrName, value) }),
-});
-let ClassBinding = create(BindingType, {
-  get: valueEnumerable(function(el) { return el.classList.contains(this.className) }),
-  set: valueEnumerable(function(el, value) { return el.classList.toggle(this.className, value) }),
-});
-let PropBinding = create(BindingType, {
-  get: valueEnumerable(function(el) { return el[this.propName] }),
-  set: valueEnumerable(function(el, value) { return (el[this.propName] = value) }),
-});
-let ActorBinding = create(BindingType, {
-  get: valueEnumerable(() => null),
-  set: valueEnumerable(function(el) {
-    // TODO unmount?
-    this.actor.mount(el);
-  }),
-  init: valueEnumerable(true)
-})
-
-let mutation = (selector, m) => (root, value) => {
-  let el = root.querySelector(selector);
-  return m.set(el, value);
-};
 let effect = fn => (_r, _v, ev) => fn(ev);
+let viewEffect = () => (_r, _v, ev) => {
+  // Re-render the view with updated model
+  let component = ev.service.context.root;
+  if(component.actor.service) {
+    component.draw();
+  }
+};
 let mutateAction = (fns, key) =>
   action((ctx, ev) => {
     for (let fn of fns) {
       fn(ctx.root, ctx.model[key], ev);
     }
   });
-let initAction = (allBindings) => {
-  let initBindings = allBindings.filter(binding => binding.init);
-  return action(({ root, model }) => {
-    initBindings.forEach(binding => {
-      for(let el of root.querySelectorAll(binding.selector)) {
-        // TODO obviously wrong
-        binding.set(el, model[binding.key]);
-      }
-    });
-  });
-};
 
 // Schema modeling
 let StringType = {
@@ -102,75 +69,92 @@ class Event {
   }
 }
 
-function listenToEvents(app, root) {
-  for (let [selector, defns] of Object.entries(app.events)) {
-    let selected = selector === ':scope' ? [root] : root.querySelectorAll(selector);
-    for (let el of selected) {
-      for (let [domEvent, machineEvent] of defns) {
-        el.addEventListener(domEvent, (ev) => {
-          // TODO unlisten
-          app.service?.send(new Event(machineEvent, ev, root, app.service));
-        });
-      }
-    }
+class Component extends PreactComponent {
+  constructor(props) {
+    super(props);
+    this.actor = Object.create(props.actor);
+    this.actor.init(this);
+    this.state = {
+      view: this.actor.viewFn({ model: this.actor.service.context.model, send: this.actor.send })
+    };
   }
-}
 
-function listenToMutations(app, root) {
-  let observer = new MutationObserver(mutations => {
-    // Loop over added nodes and see if any bindings match.
-    for(let { addedNodes } of mutations) {
-      for(let addedNode of addedNodes) {
-        if(addedNode.nodeType !== 1) continue;
-        app.service.context.bindings.forEach(binding => {
-          for(let el of addedNode.querySelectorAll(binding.selector)) {
-            binding.set(el, app.service.context.model[binding.key]);
-          }
-        });
-      }
-    }
-  });
-  observer.observe(root, { childList: true, subtree: true });
+  draw() {
+    this.setState({
+      view: this.actor.viewFn({ model: this.actor.service.context.model, send: this.actor.send })
+    });
+  }
+
+  render() {
+    return this.state.view;
+  }
 }
 
 let Actor = {
   __proto__: AnyType,
   mount(selector) {
-    // TODO this should create an instance of app
     let el =
       typeof selector === 'string'
         ? document.querySelector(selector)
         : selector;
+    // Render the view with the actual model from the service
+    if (this.viewFn) {
+      render(createElement(this.view()), el);
+    }
+  },
+  init(component) {
     this.service = interpret(
       this.machine,
       () => {
         // TODO state change effects
       },
-      el,
-      new Event(null, null, el, null)
+      component,
+      new Event(null, null, component, null)
     );
-    listenToEvents(this, el);
-    listenToMutations(this, el);
+
+    // Create send function for dispatching events
+    this.send = (eventType) => {
+      this.service?.send(new Event(eventType, null, component, this.service));
+    };
   },
+  view() {
+    return () => createElement(Component, { actor: this });
+  }
 };
 
-function createModel(root, schema, bindings) {
+function createDefaultModel(schema) {
   let model = {};
-  // TODO this can be compiled ahead of time
   for(const [key, type] of Object.entries(schema)) {
-    let b = bindings[key];
-    if(typeof b !== 'undefined') {
-      let el = root.querySelector(b.selector);
-      model[key] = type.coerce(b.get(el));
+    // Create default values based on type
+    if (type === StringType) {
+      model[key] = '';
+    } else if (type === NumberType) {
+      model[key] = 0;
+    } else if (type === BooleanType) {
+      model[key] = false;
+    } else if (type === ArrayType) {
+      model[key] = [];
+    } else if(Actor.isPrototypeOf(type)) {
+      model[key] = type;
+    } else {
+      model[key] = null;
     }
   }
   return model;
 }
 
-const buildModelFn = (schema, bindings) => root => createModel(root, schema, bindings);
+const buildDefaultModelFn = (schema) => () => createDefaultModel(schema);
 
 function build(builder) {
   let effects = builder.effects;
+  
+  // If there's a view function, create view effects for all model keys
+  if (builder.viewFn) {
+    for (let key in builder.model) {
+      effects[key] = mergeArray(effects[key], viewEffect());
+    }
+  }
+  
   let machineDefn = {};
   for (let name in builder.states) {
     let state = builder.states[name];
@@ -219,16 +203,15 @@ function build(builder) {
     machineDefn[name] = createState(...stateArgs);
   }
 
-  // Setup bindings
-  let allBindings = Object.values(builder.bindings);
-
-  machineDefn[BEEPBOOP_INITIAL_STATE] = createState(immediate(builder.initial, initAction(allBindings)));
-
-  let modelFn = buildModelFn(builder.model, builder.bindings);
+  // Always use default model creation
+  let modelFn = buildDefaultModelFn(builder.model);
+    
+  // Add the initial state that immediately transitions to the builder's initial state
+  machineDefn[BEEPBOOP_INITIAL_STATE] = createState(immediate(builder.initial));
+    
   let machine = createMachine(BEEPBOOP_INITIAL_STATE, machineDefn, (root) => {
     return {
-      bindings: allBindings,
-      model: modelFn(root),
+      model: modelFn(),
       root,
     };
   });
@@ -240,15 +223,13 @@ function extendState(bb, state) {
   return desc.value;
 }
 
-function createBuilder(initial, model, selectors, states, effects, evMap, bindings) {
+function createBuilder(initial, model, states, effects, viewFn) {
   return Object.create(Builder, {
     initial: valueEnumerable(initial),
     model: valueEnumerable(model),
-    selectors: valueEnumerable(selectors),
     states: valueEnumerable(states),
     effects: valueEnumerable(effects ?? {}),
-    evMap: valueEnumerable(evMap ?? {}),
-    bindings: valueEnumerable(bindings ?? {})
+    viewFn: valueEnumerable(viewFn ?? null)
   });
 }
 
@@ -256,11 +237,9 @@ function appendStates(builder, states) {
   return createBuilder(
     builder.initial,
     builder.model,
-    builder.selectors,
     states,
-    builder.evMap,
     builder.effects,
-    builder.bindings,
+    builder.viewFn
   );
 }
 
@@ -272,24 +251,12 @@ let AssignType = {
   },
 };
 
-let addDOMBinding = (b, selector, key, BindingType) => 
-  createBuilder(b.initial, b.model, b.selectors, b.states, {
-    ...b.effects,
-    [key]: mergeArray(b.effects[key], mutation(selector, BindingType)),
-  }, b.evMap, {
-    ...b.bindings,
-    [key]: create(BindingType, { key: valueEnumerable(key), selector: valueEnumerable(selector) })
-  });
-
 let Builder = {
   template() {
     throw new Error(`Not yet implemented.`);
   },
-  selectors(selectors) {
-    return createBuilder(this.initial, this.model, selectors, this.states, this.effects, this.evMap, this.bindings);
-  },
   model(schema) {
-    return createBuilder(this.initial, schema, this.selectors, this.states, this.effects, this.evMap, this.bindings);
+    return createBuilder(this.initial, schema, this.states, this.effects, this.viewFn);
   },
   string() {
     return create(StringType);
@@ -310,7 +277,7 @@ let Builder = {
         immediates: {},
       };
     }
-    return createBuilder(names[0], this.model, this.selectors, desc, this.effects, this.evMap, this.bindings);
+    return createBuilder(names[0], this.model, desc, this.effects, this.viewFn);
   },
   events(state, events) {
     // TODO validate state exists
@@ -349,46 +316,20 @@ let Builder = {
       fn: valueEnumerable(fn),
     });
   },
-  on(selector, domEvent, machineEvent) {
-    return createBuilder(this.initial, this.model, this.selectors, this.states, this.effects, {
-      ...this.evMap,
-      [selector]: mergeArray(this.evMap[selector], [domEvent, machineEvent]),
-    }, this.bindings);
-  },
-  text(selector, key) {
-    return addDOMBinding(this, selector, key, TextBinding);
-  },
-  attr(selector, attrName, key) {
-    return addDOMBinding(this, selector, key, Object.create(AttrBinding, {
-      attrName: valueEnumerable(attrName)
-    }));
-  },
-  class(selector, className, key) {
-    return addDOMBinding(this, selector, key, Object.create(ClassBinding, {
-      className: valueEnumerable(className)
-    }));
-  },
-  prop(selector, propName, key) {
-    return addDOMBinding(this, selector, key, Object.create(PropBinding, {
-      propName: valueEnumerable(propName)
-    }));
-  },
-  spawn(selector, key, actor) {
-    return addDOMBinding(this, selector, key, Object.create(ActorBinding, {
-      actor: valueEnumerable(actor)
-    }));
-  },
   effect(key, fn) {
-    return createBuilder(this.initial, this.model, this.selectors, this.states, {
+    return createBuilder(this.initial, this.model, this.states, {
       ...this.effects,
       [key]: mergeArray(this.effects[key], effect(fn)),
-    }, this.evMap, this.bindings);
+    }, this.viewFn);
+  },
+  view(fn) {
+    return createBuilder(this.initial, this.model, this.states, this.effects, fn ?? null);
   },
   actor(builder) {
     if(builder) {
       return Object.create(Actor, {
         machine: valueEnumerable(build(builder)),
-        events: valueEnumerable(builder.evMap),
+        viewFn: valueEnumerable(builder.viewFn),
         service: valueEnumerableWritable(undefined),
       });
     } else {

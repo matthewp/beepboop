@@ -32,6 +32,7 @@
   },
   "homepage": "https://github.com/matthewp/beepboop#readme",
   "dependencies": {
+    "preact": "^10.26.9",
     "robot3": "^0.4.0",
     "ts-types-html-parser": "0.0.5"
   },

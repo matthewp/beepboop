@@ -1,7 +1,6 @@
 import { bb } from '@matthewp/beepboop';
 
 let machine = bb
-  .selectors(['#count', '#inc', '#dec'])
   .model({
     count: bb.number()
   })
@@ -24,8 +23,15 @@ let machine = bb
     'idle',
     bb.assign('count', ({ model }) => model.count - 1)
   )
-  .on('#inc', 'click', 'increment')
-  .on('#dec', 'click', 'decrement')
-  .text('#count', 'count')
+  .view(({ model, send }) => {
+    return (
+      <>
+        <h2>Counter</h2>
+        <div>Count: {model.count}</div>
+        <button id="inc" type="button" onClick={() => send('increment')}>Increment</button>
+        <button id="dec" type="button" onClick={() => send('decrement')} disabled={model.count <= 0}>Decrement</button>
+      </>
+    );
+  })
 
 export default bb.actor(machine);
