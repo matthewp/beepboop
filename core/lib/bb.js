@@ -54,6 +54,12 @@ let AnyType = {
   coerce: raw => raw
 };
 
+let isSchemaType = (val) => StringType.isPrototypeOf(val) ||
+  NumberType.isPrototypeOf(val) ||
+  BooleanType.isPrototypeOf(val) ||
+  ArrayType.isPrototypeOf(val) ||
+  AnyType.isPrototypeOf(val);
+
 class Event {
   constructor(type, domEvent, root, service) {
     this.type = type;
@@ -79,8 +85,16 @@ class Component extends PreactComponent {
     };
   }
 
+  deliver = (name) => {
+    return event => this.actor.send(name, event);
+  };
+
   callView() {
-    return this.actor.viewFn({ model: this.actor.service.context.model, send: this.actor.send });
+    return this.actor.viewFn({
+      deliver: this.deliver,
+      model: this.actor.service.context.model,
+      send: this.actor.send
+    });
   }
 
   draw() {
@@ -117,8 +131,8 @@ let Actor = {
     );
 
     // Create send function for dispatching events
-    this.send = (eventType) => {
-      this.service?.send(new Event(eventType, null, component, this.service));
+    this.send = (eventType, domEvent) => {
+      this.service?.send(new Event(eventType, domEvent, component, this.service));
     };
   },
   view() {
@@ -130,18 +144,8 @@ function createDefaultModel(schema) {
   let model = {};
   for(const [key, type] of Object.entries(schema)) {
     // Create default values based on type
-    if (type === StringType) {
-      model[key] = '';
-    } else if (type === NumberType) {
-      model[key] = 0;
-    } else if (type === BooleanType) {
-      model[key] = false;
-    } else if (type === ArrayType) {
-      model[key] = [];
-    } else if(Actor.isPrototypeOf(type)) {
-      model[key] = type;
-    } else {
-      model[key] = null;
+    if (isSchemaType(type)) {
+      model[key] = type.value;
     }
   }
   return model;
@@ -265,8 +269,12 @@ let Builder = {
   string() {
     return create(StringType);
   },
-  number() {
-    return create(NumberType);
+  number(initialValue) {
+    return create(NumberType, {
+      value: {
+        value: initialValue
+      }
+    });
   },
   boolean() {
     return create(BooleanType);

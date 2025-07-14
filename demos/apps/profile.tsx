@@ -13,7 +13,7 @@ let machine = bb
   .transition('idle', 'change-age', 'idle',
     bb.assign('age', ({ domEvent }) => (domEvent.target as HTMLInputElement).valueAsNumber)
   )
-  .view(({ model, send }) => {
+  .view(({ model, deliver }) => {
     return (
       <>
         <h2>User Profile</h2>
@@ -24,14 +24,14 @@ let machine = bb
           type="text"
           placeholder="enter your name"
           value={model.name}
-          onInput={e => send({ type: 'change-name', domEvent: e })}
+          onInput={deliver('change-name')}
         />
         <input
           name="age"
           type="number"
           placeholder="enter your age"
           value={model.age}
-          onInput={e => send({ type: 'change-age', domEvent: e })}
+          onInput={deliver('change-age')}
         />
       </>
     );

@@ -2,7 +2,6 @@ import { bb } from '@matthewp/beepboop';
 
 import counter from './counter';
 import profile from './profile';
-import docs from './docs';
 import darkmode from './darkmode';
 import { Component, h } from 'preact';
 
@@ -10,7 +9,6 @@ let machine = bb
   .model({
     counter,
     darkmode,
-    docs,
     profile,
   })
   .states(['idle'] as const)
@@ -18,7 +16,6 @@ let machine = bb
     const DarkMode = darkmode.view();
     const Counter = counter.view();
     const Profile = profile.view();
-    const Docs = docs.view();
     return (
       <>
         <DarkMode />
@@ -29,12 +26,8 @@ let machine = bb
         <div id="profile-app">
           <Profile />
         </div>
-        <hr />
-        <div id="docs-app">
-          <Docs />
-        </div>
       </>
     );
   })
 
-bb.actor(machine).mount(document);
+bb.actor(machine).mount(document.querySelector('main'));
