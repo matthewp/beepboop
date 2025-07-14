@@ -4,8 +4,8 @@ let machine = bb
   .model({
     count: bb.number(5)
   })
-  .states(['idle', 'increment', 'decrement'] as const)
-  .events('idle', ['increment', 'decrement'] as const)
+  .states(['idle', 'increment', 'decrement'])
+  .events('idle', ['increment', 'decrement'])
   .transition('idle', 'increment', 'increment')
   .transition(
     'idle',

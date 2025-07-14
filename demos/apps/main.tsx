@@ -11,7 +11,7 @@ let machine = bb
     darkmode,
     profile,
   })
-  .states(['idle'] as const)
+  .states(['idle'])
   .view(({ model }) => {
     const DarkMode = darkmode.view();
     const Counter = counter.view();

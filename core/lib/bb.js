@@ -266,8 +266,12 @@ let Builder = {
   model(schema) {
     return createBuilder(this.initial, schema, this.states, this.effects, this.viewFn);
   },
-  string() {
-    return create(StringType);
+  string(initialValue) {
+    return create(StringType, {
+      value: {
+        value: initialValue
+      }
+    });
   },
   number(initialValue) {
     return create(NumberType, {
@@ -276,8 +280,12 @@ let Builder = {
       }
     });
   },
-  boolean() {
-    return create(BooleanType);
+  boolean(initialValue) {
+    return create(BooleanType, {
+      value: {
+        value: initialValue
+      }
+    });
   },
   array() { return create(ArrayType); },
   type() { return undefined; },

@@ -6,8 +6,8 @@ let machine = bb
     dark: bb.boolean(),
     emoji: bb.string(),
   })
-  .states(['idle'] as const)
-  .events('idle', ['toggle'] as const)
+  .states(['idle'])
+  .events('idle', ['toggle'])
   .transition(
     'idle',
     'toggle',

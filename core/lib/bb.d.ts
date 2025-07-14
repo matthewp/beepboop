@@ -166,9 +166,9 @@ type BuilderType<R extends RawShape> = {
 
   // Data model
   model<MS extends ModelSchema>(schema: MS): BuilderType<AddModel<R, MS>>;
-  string(): BBString;
-  number(): BBNumber;
-  boolean(): BBBool;
+  string(initialValue?: string): BBString;
+  number(initialValue?: number): BBNumber;
+  boolean(initialValue?: boolean): BBBool;
   object(o: { [k: string]: BBSchemaType }): BBObject;
   array(arr: BBSchemaType): BBArray;
   type<T>(): BBType<T>;
