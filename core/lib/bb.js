@@ -75,13 +75,17 @@ class Component extends PreactComponent {
     this.actor = Object.create(props.actor);
     this.actor.init(this);
     this.state = {
-      view: this.actor.viewFn({ model: this.actor.service.context.model, send: this.actor.send })
+      view: this.callView()
     };
+  }
+
+  callView() {
+    return this.actor.viewFn({ model: this.actor.service.context.model, send: this.actor.send });
   }
 
   draw() {
     this.setState({
-      view: this.actor.viewFn({ model: this.actor.service.context.model, send: this.actor.send })
+      view: this.callView()
     });
   }
 
