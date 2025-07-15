@@ -163,9 +163,18 @@ function build(builder) {
     }
   }
   
+  // Process always transitions - apply to all states
+  let states = { ...builder.states };
+  for (let { event, args } of (builder.alwaysTransitions || [])) {
+    for (let stateName in states) {
+      let state = states[stateName];
+      state.events[event] = mergeArray(state.events[event], [stateName, args]);
+    }
+  }
+  
   let machineDefn = {};
-  for (let name in builder.states) {
-    let state = builder.states[name];
+  for (let name in states) {
+    let state = states[name];
     let stateArgs = [];
     for (let evName in state.events) {
       let eventDetails = state.events[evName];
@@ -231,13 +240,14 @@ function extendState(bb, state) {
   return desc.value;
 }
 
-function createBuilder(initial, model, states, effects, viewFn) {
+function createBuilder(initial, model, states, effects, viewFn, alwaysTransitions) {
   return Object.create(Builder, {
     initial: valueEnumerable(initial),
     model: valueEnumerable(model),
     states: valueEnumerable(states),
     effects: valueEnumerable(effects ?? {}),
-    viewFn: valueEnumerable(viewFn ?? null)
+    viewFn: valueEnumerable(viewFn ?? null),
+    alwaysTransitions: valueEnumerable(alwaysTransitions ?? [])
   });
 }
 
@@ -247,7 +257,8 @@ function appendStates(builder, states) {
     builder.model,
     states,
     builder.effects,
-    builder.viewFn
+    builder.viewFn,
+    builder.alwaysTransitions
   );
 }
 
@@ -340,10 +351,21 @@ let Builder = {
     return createBuilder(this.initial, this.model, this.states, {
       ...this.effects,
       [key]: mergeArray(this.effects[key], effect(fn)),
-    }, this.viewFn);
+    }, this.viewFn, this.alwaysTransitions);
+  },
+  always(event, ...args) {
+    const newAlwaysTransitions = mergeArray(this.alwaysTransitions, { event, args });
+    return createBuilder(
+      this.initial,
+      this.model,
+      this.states,
+      this.effects,
+      this.viewFn,
+      newAlwaysTransitions
+    );
   },
   view(fn) {
-    return createBuilder(this.initial, this.model, this.states, this.effects, fn ?? null);
+    return createBuilder(this.initial, this.model, this.states, this.effects, fn ?? null, this.alwaysTransitions);
   },
   actor(builder) {
     if(builder) {

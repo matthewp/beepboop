@@ -73,6 +73,14 @@ type AddEvent<R extends RawShape, S extends GetStates<R>, E extends string, D ex
 type AddTransition<R extends RawShape, S extends GetStates<R>, E extends GetEvents<R, S>, D extends string> =
   AddEvent<R, S, E, [...GetTransitions<R, S, E>, D]>;
 type AddImmediate<R extends RawShape,S extends GetStates<R>, D extends string> = AddState<R, S, GetEvents<R, S>, [...GetImmediates<R, S>, D]>;
+type AddAlwaysEvent<R extends RawShape, E extends string> = R & {
+  states: {
+    [K in keyof R['states']]: {
+      events: R['states'][K]['events'] & { [e in E]: [K] };
+      immediates: R['states'][K]['immediates'];
+    };
+  };
+};
 
 // Extras
 declare const GUARD_BRAND: unique symbol;
@@ -192,6 +200,10 @@ type BuilderType<R extends RawShape> = {
     dest: D,
     ...extras: ExtraType<R>[]
   ): BuilderType<AddImmediate<R, S, D>>;
+  always<E extends string>(
+    event: E,
+    ...extras: ExtraType<R>[]
+  ): BuilderType<AddAlwaysEvent<R, E>>;
 
   // Helpers
   guard<RR extends R>(

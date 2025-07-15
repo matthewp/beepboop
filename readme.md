@@ -69,7 +69,14 @@ Update your model or perform side effects:
 )
 ```
 
-### 7. Views
+### 7. Always Transitions
+Handle events that can occur in any state without transitioning:
+
+```typescript
+.always('props', bb.assign('connected', ({ domEvent }) => domEvent.detail.connected))
+```
+
+### 8. Views
 Render UI based on current state and model:
 
 ```typescript
@@ -267,6 +274,18 @@ Define a transition that happens automatically without waiting for an event. Use
 .immediate('checking', 'error',
   bb.guard(({ model }) => !model.isValid)
 )
+```
+
+### `.always(event, ...actions)`
+Define an event that can be handled in any state without transitioning. The machine stays in the current state and runs the provided actions.
+
+```typescript
+// Handle props updates in any state
+.always('props', bb.assign('connected', ({ domEvent }) => domEvent.detail.connected))
+
+// Handle multiple always events
+.always('increment', bb.assign('count', ({ model }) => model.count + 1))
+.always('reset', bb.assign('count', () => 0))
 ```
 
 ### `bb.guard(predicateFn)`
