@@ -1,5 +1,11 @@
 # @matthewp/beepboop
 
+## 0.2.0
+
+### Minor Changes
+
+- 7e1cc4b: Adds .effect() and .always()
+
 ## 0.1.0
 
 ### Minor Changes
