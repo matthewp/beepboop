@@ -81,6 +81,10 @@ class Component extends PreactComponent {
     super(props);
     this.actor = Object.create(props.actor);
     this.actor.init(this);
+    
+    // Send initial props event
+    this.actor.send('props', props.props);
+    
     this.state = {
       view: this.callView()
     };
@@ -102,6 +106,11 @@ class Component extends PreactComponent {
     this.setState({
       view: this.callView()
     });
+  }
+
+  componentDidUpdate(prevProps) {
+    // Send props event on updates
+    this.actor.send('props', this.props.props);
   }
 
   render() {
@@ -137,7 +146,7 @@ let Actor = {
     };
   },
   view() {
-    return () => createElement(Component, { actor: this });
+    return (props) => createElement(Component, { actor: this, props });
   }
 };
 

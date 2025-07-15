@@ -37,7 +37,7 @@ type RawShape = {
 type GetSelectors<R extends RawShape> = keyof R['selectors'] extends string ? keyof R['selectors'] : never;
 type GetStates<R extends RawShape> = keyof R['states'] extends string ? keyof R['states'] : never;
 type GetEvents<R extends RawShape, S extends GetStates<R>> = keyof R['states'][S]['events'] extends string ? keyof R['states'][S]['events'] : never;
-type GetAllEvents<R extends RawShape> = util.AllKeys<R['states'][GetStates<R>]['events']>
+type GetAllEvents<R extends RawShape> = util.AllKeys<R['states'][GetStates<R>]['events']> | 'props'
 type GetImmediates<R extends RawShape, S extends GetStates<R>> =
   R['states'][S]['immediates'] extends undefined ? [] : R['states'][S]['immediates'];
 type GetTransitions<R extends RawShape, S extends GetStates<R>, E extends GetEvents<R, S>> = R['states'][S]['events'][E];
