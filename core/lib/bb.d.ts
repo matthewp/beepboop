@@ -95,6 +95,7 @@ type ReduceType<R extends RawShape> = util.brand<{
   fn: (model: R['model']) => R['model'];
 }, 'reduce'>;
 type ExtraType<R extends RawShape> = GuardType<R> | ReduceType<R>;
+type SendFunction<R extends RawShape> = (event: GetAllEvents<R> | { type: GetAllEvents<R>; [key: string]: any }) => void;
 
 // Data model
 declare const underlyingTypeSymbol: unique symbol;
@@ -160,6 +161,9 @@ type BuilderType<R extends RawShape> = {
     key: K,
     fn: (event: MachineEvent<R>) => void
   ): BuilderType<R>;
+  effect(
+    fn: (event: MachineEvent<R>, send: SendFunction<R>) => void | (() => void)
+  ): BuilderType<R>;
   spawn<S extends GetSelectors<R> = GetSelectors<R>, K extends GetModelKeys<R> = GetModelKeys<R>>(
     sel: S,
     key: K,
@@ -168,7 +172,7 @@ type BuilderType<R extends RawShape> = {
   view(
     fn: (props: { 
       model: { [k in GetModelKeys<R>]: GetModelKeyType<R, k> };
-      send: (event: GetAllEvents<R> | { type: GetAllEvents<R>; [key: string]: any }) => void;
+      send: SendFunction<R>;
     }) => any
   ): BuilderType<R>;
 

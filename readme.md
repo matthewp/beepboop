@@ -288,6 +288,32 @@ Define an event that can be handled in any state without transitioning. The mach
 .always('reset', bb.assign('count', () => 0))
 ```
 
+### `.effect(fn)`
+Define a lifecycle effect that runs once when the machine starts (client-side only). Use this for setting up external resources like event listeners, timers, or WebSocket connections.
+
+```typescript
+// Setup external event listeners
+.effect((event, send) => {
+  const onOnline = () => send('connect');
+  const onOffline = () => send('disconnect');
+  
+  addEventListener('online', onOnline);
+  addEventListener('offline', onOffline);
+  
+  // Return cleanup function
+  return () => {
+    removeEventListener('online', onOnline);
+    removeEventListener('offline', onOffline);
+  };
+})
+
+// Setup timers
+.effect((event, send) => {
+  const interval = setInterval(() => send('tick'), 1000);
+  return () => clearInterval(interval);
+})
+```
+
 ### `bb.guard(predicateFn)`
 Create a condition that must be true for a transition to occur. The predicate function receives an event object with access to the model and other context.
 
@@ -316,6 +342,21 @@ bb.assign('name', ({ domEvent }) =>
 bb.assign('message', ({ model, state }) => 
   `Count is ${model.count} in ${state} state`
 )
+```
+
+### `.effect(key, fn)`
+Create a model effect that runs when a specific model property changes.
+
+```typescript
+// Log when count changes
+.effect('count', (event) => {
+  console.log('Count changed to:', event.model.count);
+})
+
+// Save to localStorage when user changes
+.effect('user', (event) => {
+  localStorage.setItem('user', JSON.stringify(event.model.user));
+})
 ```
 
 ### `.view(componentFn)`

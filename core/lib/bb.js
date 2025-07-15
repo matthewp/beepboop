@@ -12,6 +12,7 @@ import { createElement, render, Component as PreactComponent } from 'preact';
 
 // Constants
 const BEEPBOOP_INITIAL_STATE = 'beepboop.initial';
+const LIFECYCLE_EFFECT = Symbol('lifecycle');
 
 // Util
 let valueEnumerable = (value) => ({ enumerable: true, value });
@@ -222,9 +223,14 @@ function build(builder) {
 
   // Always use default model creation
   let modelFn = buildDefaultModelFn(builder.model);
-    
+  
   // Add the initial state that immediately transitions to the builder's initial state
-  machineDefn[BEEPBOOP_INITIAL_STATE] = createState(immediate(builder.initial));
+  let initialArgs = [];
+  if (effects[LIFECYCLE_EFFECT] && typeof window !== 'undefined') {
+    initialArgs.push(...effects[LIFECYCLE_EFFECT]);
+  }
+  
+  machineDefn[BEEPBOOP_INITIAL_STATE] = createState(immediate(builder.initial, ...initialArgs));
     
   let machine = createMachine(BEEPBOOP_INITIAL_STATE, machineDefn, (root) => {
     return {
@@ -347,10 +353,22 @@ let Builder = {
       fn: valueEnumerable(fn),
     });
   },
-  effect(key, fn) {
+  effect(keyOrFn, fn) {
+    let key, effectFn;
+    
+    if (typeof keyOrFn === 'function') {
+      // Lifecycle effect - use special symbol key
+      key = LIFECYCLE_EFFECT;
+      effectFn = keyOrFn;
+    } else {
+      // Model effect - use provided key
+      key = keyOrFn;
+      effectFn = fn;
+    }
+    
     return createBuilder(this.initial, this.model, this.states, {
       ...this.effects,
-      [key]: mergeArray(this.effects[key], effect(fn)),
+      [key]: mergeArray(this.effects[key], effect(effectFn)),
     }, this.viewFn, this.alwaysTransitions);
   },
   always(event, ...args) {
