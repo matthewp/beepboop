@@ -1,3 +1,4 @@
+import { Component } from 'preact';
 import { type GetSelectors as GetTemplateSelectors } from 'ts-types-html-parser';
 
 declare namespace util {
@@ -72,7 +73,7 @@ type AddEvent<R extends RawShape, S extends GetStates<R>, E extends string, D ex
 >;
 type AddTransition<R extends RawShape, S extends GetStates<R>, E extends GetEvents<R, S>, D extends string> =
   AddEvent<R, S, E, [...GetTransitions<R, S, E>, D]>;
-type AddImmediate<R extends RawShape,S extends GetStates<R>, D extends string> = AddState<R, S, GetEvents<R, S>, [...GetImmediates<R, S>, D]>;
+type AddImmediate<R extends RawShape, S extends GetStates<R>, D extends string> = AddState<R, S, GetEvents<R, S>, [...GetImmediates<R, S>, D]>;
 type AddAlwaysEvent<R extends RawShape, E extends string> = R & {
   states: {
     [K in keyof R['states']]: {
@@ -95,7 +96,7 @@ type ReduceType<R extends RawShape> = util.brand<{
   fn: (model: R['model']) => R['model'];
 }, 'reduce'>;
 type ExtraType<R extends RawShape> = GuardType<R> | ReduceType<R>;
-type SendFunction<R extends RawShape> = (event: GetAllEvents<R> | { type: GetAllEvents<R>; [key: string]: any }) => void;
+type SendFunction<R extends RawShape> = (event: GetAllEvents<R> | { type: GetAllEvents<R>;[key: string]: any }) => void;
 
 // Data model
 declare const underlyingTypeSymbol: unique symbol;
@@ -113,12 +114,14 @@ type ModelSchema = {
 // Event
 type MachineEvent<R extends RawShape> = {
   type: GetAllEvents<R>;
-  domEvent: MouseEvent;
+  domEvent: Event;
   model: {
     [k in GetModelKeys<R>]: GetModelKeyType<R, k>
   };
   state: GetStates<R>;
-  root: HTMLElement;
+  root: Component;
+  send: <T = any>(type: string, data: T) => void;
+  sendEvent: (type: string, domEvent: Event) => void;
 };
 
 // Actor
@@ -162,7 +165,7 @@ type BuilderType<R extends RawShape> = {
     fn: (event: MachineEvent<R>) => void
   ): BuilderType<R>;
   effect(
-    fn: (event: MachineEvent<R>, send: SendFunction<R>) => void | (() => void)
+    fn: (event: MachineEvent<R>) => void | (() => void)
   ): BuilderType<R>;
   spawn<S extends GetSelectors<R> = GetSelectors<R>, K extends GetModelKeys<R> = GetModelKeys<R>>(
     sel: S,
@@ -170,7 +173,7 @@ type BuilderType<R extends RawShape> = {
     actor: Actor
   ): BuilderType<R>;
   view(
-    fn: (props: { 
+    fn: (props: {
       model: { [k in GetModelKeys<R>]: GetModelKeyType<R, k> };
       send: SendFunction<R>;
     }) => any
@@ -228,7 +231,7 @@ type BuilderType<R extends RawShape> = {
 type Builder = BuilderType<{ states: {}, selectors: {}, model: {} }>;
 declare const bb: Builder;
 
-declare class  extends Component<{ actor: Actor }> {
+declare class extends Component<{ actor: Actor }> {
   draw(): void;
 }
 

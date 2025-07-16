@@ -29,7 +29,7 @@ let effect = fn => (_r, _v, ev) => fn(ev);
 let viewEffect = () => (_r, _v, ev) => {
   // Re-render the view with updated model
   let component = ev.service.context.root;
-  if(component.actor.service) {
+  if (component.actor.service) {
     component.draw();
   }
 };
@@ -42,7 +42,7 @@ let mutateAction = (fns, key) =>
 
 // Schema modeling
 let StringType = {
-  coerce: raw => ''+raw
+  coerce: raw => '' + raw
 };
 let BooleanType = {
   coerce: raw => Boolean(raw)
@@ -62,11 +62,23 @@ let isSchemaType = (val) => StringType.isPrototypeOf(val) ||
   AnyType.isPrototypeOf(val);
 
 class Event {
-  constructor(type, domEvent, root, service) {
+  constructor(type, domEvent, data, actor) {
     this.type = type;
     this.domEvent = domEvent;
-    this.root = root;
-    this.service = service;
+    this.actor = actor;
+    this.data = data;
+  }
+  send = (...args) => {
+    return this.actor.send(...args);
+  }
+  sendEvent(...args) {
+    return this.actor.sendEvent(...args);
+  }
+  get root() {
+    return this.actor.component;
+  }
+  get service() {
+    return this.actor.service;
   }
   get model() {
     return this.service.context.model;
@@ -81,17 +93,17 @@ class Component extends PreactComponent {
     super(props);
     this.actor = Object.create(props.actor);
     this.actor.init(this);
-    
+
     // Send initial props event
     this.actor.send('props', props.props);
-    
+
     this.state = {
       view: this.callView()
     };
   }
 
   deliver = (name) => {
-    return event => this.actor.send(name, event);
+    return event => this.actor.sendEvent(name, event);
   };
 
   callView() {
@@ -131,19 +143,21 @@ let Actor = {
     }
   },
   init(component) {
+    this.component = component;
     this.service = interpret(
       this.machine,
       () => {
         // TODO state change effects
       },
       component,
-      new Event(null, null, component, null)
+      new Event(null, null, null, this)
     );
-
-    // Create send function for dispatching events
-    this.send = (eventType, domEvent) => {
-      this.service?.send(new Event(eventType, domEvent, component, this.service));
-    };
+  },
+  send(eventType, data) {
+    this.service?.send(new Event(eventType, null, data, this));
+  },
+  sendEvent(eventType, domEvent) {
+    this.service?.send(new Event(eventType, domEvent, null, this));
   },
   view() {
     return (props) => createElement(Component, { actor: this, props });
@@ -152,7 +166,7 @@ let Actor = {
 
 function createDefaultModel(schema) {
   let model = {};
-  for(const [key, type] of Object.entries(schema)) {
+  for (const [key, type] of Object.entries(schema)) {
     // Create default values based on type
     if (isSchemaType(type)) {
       model[key] = type.value;
@@ -165,14 +179,14 @@ const buildDefaultModelFn = (schema) => () => createDefaultModel(schema);
 
 function build(builder) {
   let effects = builder.effects;
-  
+
   // If there's a view function, create view effects for all model keys
   if (builder.viewFn) {
     for (let key in builder.model) {
       effects[key] = mergeArray(effects[key], viewEffect());
     }
   }
-  
+
   // Process always transitions - apply to all states
   let states = { ...builder.states };
   for (let { event, args } of (builder.alwaysTransitions || [])) {
@@ -181,7 +195,7 @@ function build(builder) {
       state.events[event] = mergeArray(state.events[event], [stateName, args]);
     }
   }
-  
+
   let machineDefn = {};
   for (let name in states) {
     let state = states[name];
@@ -194,7 +208,7 @@ function build(builder) {
           if (AssignType.isPrototypeOf(type)) {
             let key = type.key;
             args.push(reduce(type.reducer.bind(type)));
-            if(typeof effects[key] !== 'undefined') {
+            if (typeof effects[key] !== 'undefined') {
               args.push(mutateAction(effects[key], key));
             }
           } else {
@@ -205,9 +219,9 @@ function build(builder) {
       }
     }
     for (let dest in state.immediates) {
-      for(let extras of state.immediates[dest]) {
+      for (let extras of state.immediates[dest]) {
         let args = [];
-        if(name === builder.initial) {
+        if (name === builder.initial) {
           args.push(reduce(function(ctx, ev) {
             ev.service = this;
             return ctx;
@@ -217,7 +231,7 @@ function build(builder) {
           if (AssignType.isPrototypeOf(type)) {
             let key = type.key;
             args.push(reduce(type.reducer.bind(type)));
-            if(typeof effects[key] !== 'undefined') {
+            if (typeof effects[key] !== 'undefined') {
               args.push(mutateAction(effects[key], key));
             }
           } else {
@@ -232,15 +246,15 @@ function build(builder) {
 
   // Always use default model creation
   let modelFn = buildDefaultModelFn(builder.model);
-  
+
   // Add the initial state that immediately transitions to the builder's initial state
   let initialArgs = [];
   if (effects[LIFECYCLE_EFFECT] && typeof window !== 'undefined') {
     initialArgs.push(...effects[LIFECYCLE_EFFECT]);
   }
-  
+
   machineDefn[BEEPBOOP_INITIAL_STATE] = createState(immediate(builder.initial, ...initialArgs));
-    
+
   let machine = createMachine(BEEPBOOP_INITIAL_STATE, machineDefn, (root) => {
     return {
       model: modelFn(),
@@ -364,7 +378,7 @@ let Builder = {
   },
   effect(keyOrFn, fn) {
     let key, effectFn;
-    
+
     if (typeof keyOrFn === 'function') {
       // Lifecycle effect - use special symbol key
       key = LIFECYCLE_EFFECT;
@@ -374,7 +388,7 @@ let Builder = {
       key = keyOrFn;
       effectFn = fn;
     }
-    
+
     return createBuilder(this.initial, this.model, this.states, {
       ...this.effects,
       [key]: mergeArray(this.effects[key], effect(effectFn)),
@@ -395,7 +409,7 @@ let Builder = {
     return createBuilder(this.initial, this.model, this.states, this.effects, fn ?? null, this.alwaysTransitions);
   },
   actor(builder) {
-    if(builder) {
+    if (builder) {
       return Object.create(Actor, {
         machine: valueEnumerable(build(builder)),
         viewFn: valueEnumerable(builder.viewFn),
