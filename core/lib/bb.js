@@ -156,7 +156,12 @@ let Actor = {
     );
   },
   send(eventType, data) {
-    this.service?.send(new EventDetails(eventType, null, data, this));
+    const domEvent = null;
+    if (typeof eventType === 'object' && ('type' in eventType)) {
+      domEvent = eventType;
+      eventType = domEvent.type;
+    }
+    this.service?.send(new EventDetails(eventType, domEvent, data, this));
   },
   sendEvent(eventType, domEvent) {
     this.service?.send(new EventDetails(eventType, domEvent, null, this));

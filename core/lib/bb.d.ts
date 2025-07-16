@@ -112,17 +112,21 @@ type ModelSchema = {
 };
 
 // Event
-type MachineEvent<R extends RawShape> = {
+type MachineEvent<R extends RawShape, T = any> = {
   type: GetAllEvents<R>;
+  data: T;
   domEvent: Event;
   model: {
     [k in GetModelKeys<R>]: GetModelKeyType<R, k>
   };
   state: GetStates<R>;
   root: Component;
-  send: <T = any>(type: string, data: T) => void;
+  send(type: string, data?: T): void;
+  send({ type: T }): void;
   sendEvent: (type: string, domEvent: Event) => void;
 };
+
+declare const me: MachineEvent<any>;
 
 // Actor
 type Actor = {
@@ -231,12 +235,12 @@ type BuilderType<R extends RawShape> = {
 type Builder = BuilderType<{ states: {}, selectors: {}, model: {} }>;
 declare const bb: Builder;
 
-declare class extends Component<{ actor: Actor }> {
+declare class BeepBoopComponent extends Component<{ actor: Actor }> {
   draw(): void;
 }
 
 export {
   bb,
-  Component,
-  Component as View,
+  BeepBoopComponent as Component,
+  BeepBoopComponent as View,
 };
