@@ -257,7 +257,7 @@ function build(builder) {
   // Add the initial state that immediately transitions to the builder's initial state
   let initialArgs = [];
   if (effects[LIFECYCLE_EFFECT] && typeof window !== 'undefined') {
-    initialArgs.push(...effects[LIFECYCLE_EFFECT]);
+    initialArgs.push(mutateAction(effects[LIFECYCLE_EFFECT], ''));
   }
 
   machineDefn[BEEPBOOP_INITIAL_STATE] = createState(immediate(builder.initial, ...initialArgs));
