@@ -61,7 +61,7 @@ let isSchemaType = (val) => StringType.isPrototypeOf(val) ||
   ArrayType.isPrototypeOf(val) ||
   AnyType.isPrototypeOf(val);
 
-class Event {
+class EventDetails {
   constructor(type, domEvent, data, actor) {
     this.type = type;
     this.domEvent = domEvent;
@@ -92,6 +92,8 @@ class Component extends PreactComponent {
   constructor(props) {
     super(props);
     this.actor = Object.create(props.actor);
+    this.actor.send = this.actor.send.bind(this.actor);
+    this.actor.sendEvent = this.actor.sendEvent.bind(this.actor);
     this.actor.init(this);
 
     // Send initial props event
@@ -150,14 +152,14 @@ let Actor = {
         // TODO state change effects
       },
       component,
-      new Event(null, null, null, this)
+      new EventDetails(null, null, null, this)
     );
   },
   send(eventType, data) {
-    this.service?.send(new Event(eventType, null, data, this));
+    this.service?.send(new EventDetails(eventType, null, data, this));
   },
   sendEvent(eventType, domEvent) {
-    this.service?.send(new Event(eventType, domEvent, null, this));
+    this.service?.send(new EventDetails(eventType, domEvent, null, this));
   },
   view() {
     return (props) => createElement(Component, { actor: this, props });
