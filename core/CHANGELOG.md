@@ -1,5 +1,11 @@
 # @matthewp/beepboop
 
+## 0.2.1
+
+### Patch Changes
+
+- e0681a8: Add send and sendEvent as separate methods
+
 ## 0.2.0
 
 ### Minor Changes
