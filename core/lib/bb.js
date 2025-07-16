@@ -156,7 +156,7 @@ let Actor = {
     );
   },
   send(eventType, data) {
-    const domEvent = null;
+    let domEvent = null;
     if (typeof eventType === 'object' && ('type' in eventType)) {
       domEvent = eventType;
       eventType = domEvent.type;
