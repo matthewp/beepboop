@@ -1,5 +1,11 @@
 # @matthewp/beepboop
 
+## 0.2.3
+
+### Patch Changes
+
+- 323b97d: Fix sending event
+
 ## 0.2.2
 
 ### Patch Changes
