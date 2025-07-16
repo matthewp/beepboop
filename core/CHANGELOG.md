@@ -1,5 +1,11 @@
 # @matthewp/beepboop
 
+## 0.2.4
+
+### Patch Changes
+
+- 5ff240c: Fix calling the initial effects
+
 ## 0.2.3
 
 ### Patch Changes
