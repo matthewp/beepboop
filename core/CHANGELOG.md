@@ -1,5 +1,11 @@
 # @matthewp/beepboop
 
+## 0.2.2
+
+### Patch Changes
+
+- a562f58: Allow more variations of send
+
 ## 0.2.1
 
 ### Patch Changes
