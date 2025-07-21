@@ -7,6 +7,7 @@ import {
   immediate,
   interpret,
   reduce,
+  invoke,
 } from 'robot3';
 import { createElement, render, Component as PreactComponent } from 'preact';
 
@@ -146,14 +147,18 @@ let Actor = {
   },
   init(component) {
     this.component = component;
+    this.interpret();
+  },
+  interpret() {
     this.service = interpret(
       this.machine,
       () => {
         // TODO state change effects
       },
-      component,
+      this.component,
       new EventDetails(null, null, null, this)
     );
+    return this;
   },
   send(eventType, data) {
     let domEvent = null;
@@ -248,7 +253,12 @@ function build(builder) {
         stateArgs.push(immediate(dest, ...args));
       }
     }
-    machineDefn[name] = createState(...stateArgs);
+    // Check if this state has an invoke function
+    if (state.invoke) {
+      machineDefn[name] = invoke(h(state.invoke), ...stateArgs);
+    } else {
+      machineDefn[name] = createState(...stateArgs);
+    }
   }
 
   // Always use default model creation
@@ -342,6 +352,7 @@ let Builder = {
       desc[name] = {
         events: {},
         immediates: {},
+        invoke: null,
       };
     }
     return createBuilder(names[0], this.model, desc, this.effects, this.viewFn);
@@ -411,6 +422,14 @@ let Builder = {
       this.viewFn,
       newAlwaysTransitions
     );
+  },
+  invoke(state, fn) {
+    let desc = extendState(this, state);
+    desc.invoke = fn;
+    return appendStates(this, {
+      ...this.states,
+      [state]: desc,
+    });
   },
   view(fn) {
     return createBuilder(this.initial, this.model, this.states, this.effects, fn ?? null, this.alwaysTransitions);

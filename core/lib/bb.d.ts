@@ -129,9 +129,12 @@ type MachineEvent<R extends RawShape, T = any> = {
 declare const me: MachineEvent<any>;
 
 // Actor
-type Actor = {
+type Actor<R extends RawShape = any> = {
   mount(rootSelector: string | HTMLElement | Document): void;
   view(): () => Component;
+  interpret(): Actor<R>;
+  send(eventType: GetAllEvents<R>, data?: any): void;
+  send(event: { type: GetAllEvents<R>; [key: string]: any }): void;
 };
 
 type BuilderType<R extends RawShape> = {
@@ -174,7 +177,7 @@ type BuilderType<R extends RawShape> = {
   spawn<S extends GetSelectors<R> = GetSelectors<R>, K extends GetModelKeys<R> = GetModelKeys<R>>(
     sel: S,
     key: K,
-    actor: Actor
+    actor: Actor<any>
   ): BuilderType<R>;
   view(
     fn: (props: {
@@ -215,6 +218,10 @@ type BuilderType<R extends RawShape> = {
     event: E,
     ...extras: ExtraType<R>[]
   ): BuilderType<AddAlwaysEvent<R, E>>;
+  invoke<S extends GetStates<R>>(
+    state: S,
+    fn: (event: MachineEvent<R>) => Promise<any>
+  ): BuilderType<R>;
 
   // Helpers
   guard<RR extends R>(
@@ -228,14 +235,14 @@ type BuilderType<R extends RawShape> = {
     fn: (event: MachineEvent<RR>) => GetModelKeyType<RR, K>
   ): ReduceType<RR>;
 
-  actor(builder: R): Actor;
-  actor(): Actor;
+  actor(builder: R): Actor<R>;
+  actor(): Actor<R>;
 }
 
 type Builder = BuilderType<{ states: {}, selectors: {}, model: {} }>;
 declare const bb: Builder;
 
-declare class BeepBoopComponent extends Component<{ actor: Actor }> {
+declare class BeepBoopComponent extends Component<{ actor: Actor<any> }> {
   draw(): void;
 }
 

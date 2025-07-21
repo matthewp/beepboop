@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "test:types": "wireit",
+    "test:dev": "wireit",
     "test": "wireit"
   },
   "repository": {
@@ -40,7 +41,8 @@
     "esbuild": "^0.17.10",
     "esbuild-register": "^3.4.2",
     "expect-type": "^0.15.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vite": "^5.4.19"
   },
   "wireit": {
     "test:types": {
@@ -55,6 +57,10 @@
       "dependencies": [
         "test:types"
       ]
+    },
+    "test:dev": {
+      "command": "vite test --host",
+      "service": true
     }
   }
 }
