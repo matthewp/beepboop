@@ -1,5 +1,11 @@
 # @matthewp/beepboop
 
+## 0.3.0
+
+### Minor Changes
+
+- 86f17ef: Adds the invoke() method
+
 ## 0.2.4
 
 ### Patch Changes
