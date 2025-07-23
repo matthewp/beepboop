@@ -52,3 +52,26 @@ const machine = bb
 ### Development Commands
 - Check README.md for any specific build, test, or development commands
 - Look for package.json scripts if development commands are needed
+
+### Creating Changesets
+When adding new features or making changes, create a changeset to document the change:
+
+1. **Create a changeset file** in `.changeset/` directory with a descriptive name
+2. **Use the changeset format**:
+   ```markdown
+   ---
+   "@matthewp/beepboop": minor
+   ---
+   
+   Brief title of the change
+   
+   Detailed description of what was added/changed. Include key features and any breaking changes.
+   ```
+3. **Choose the correct version bump**:
+   - `patch`: Bug fixes, small improvements
+   - `minor`: New features, non-breaking changes
+   - `major`: Breaking changes
+4. **Examples of good changeset titles**:
+   - "Add invoke() method and Standard Schema support"
+   - "Add bb.props(schema) for component props validation"
+   - "Fix calling the initial effects"

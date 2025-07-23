@@ -26,6 +26,24 @@ let create = (a, b) => Object.freeze(Object.create(a, b));
 let mergeArray = (a, b) => (Array.isArray(a) ? a.concat([b]) : [b]);
 let h = (fn) => (_, ev) => fn(ev);
 
+// Props validation function
+function validateProps(props, schema) {
+  if (!schema) {
+    return props; // No validation if no schema defined
+  }
+  
+  const result = schema['~standard'].validate(props);
+  if ('issues' in result) {
+    // Throw error with validation issues
+    const messages = result.issues.map(issue => 
+      `${issue.path.length > 0 ? issue.path.join('.') + ': ' : ''}${issue.message}`
+    ).join(', ');
+    throw new Error(`Props validation failed: ${messages}`);
+  }
+  
+  return result.value;
+}
+
 let effect = fn => (_r, _v, ev) => fn(ev);
 let viewEffect = () => (_r, _v, ev) => {
   // Re-render the view with updated model
@@ -48,6 +66,7 @@ class EventDetails {
     this.domEvent = domEvent;
     this.actor = actor;
     this.data = data;
+    this._service = actor.service;
   }
   send = (...args) => {
     return this.actor.send(...args);
@@ -59,7 +78,10 @@ class EventDetails {
     return this.actor.component;
   }
   get service() {
-    return this.actor.service;
+    return this._service ?? this.actor.service;
+  }
+  set service(val) {
+    this._service = val;
   }
   get model() {
     return this.service.context.model;
@@ -77,8 +99,9 @@ class Component extends PreactComponent {
     this.actor.sendEvent = this.actor.sendEvent.bind(this.actor);
     this.actor.init(this);
 
-    // Send initial props event
-    this.actor.send('props', props.props);
+    // Validate and send initial props event
+    const validatedProps = validateProps(props.props, this.actor.propsSchema);
+    this.actor.send('props', validatedProps);
 
     this.state = {
       view: this.callView()
@@ -104,8 +127,9 @@ class Component extends PreactComponent {
   }
 
   componentDidUpdate(prevProps) {
-    // Send props event on updates
-    this.actor.send('props', this.props.props);
+    // Validate and send props event on updates
+    const validatedProps = validateProps(this.props.props, this.actor.propsSchema);
+    this.actor.send('props', validatedProps);
   }
 
   render() {
@@ -249,14 +273,15 @@ function extendState(bb, state) {
   return desc.value;
 }
 
-function createBuilder(initial, model, states, effects, viewFn, alwaysTransitions) {
+function createBuilder(initial, model, states, effects, viewFn, alwaysTransitions, propsSchema) {
   return Object.create(Builder, {
     initial: valueEnumerable(initial),
     model: valueEnumerable(model),
     states: valueEnumerable(states),
     effects: valueEnumerable(effects ?? {}),
     viewFn: valueEnumerable(viewFn ?? null),
-    alwaysTransitions: valueEnumerable(alwaysTransitions ?? [])
+    alwaysTransitions: valueEnumerable(alwaysTransitions ?? []),
+    propsSchema: valueEnumerable(propsSchema ?? null)
   });
 }
 
@@ -267,7 +292,8 @@ function appendStates(builder, states) {
     states,
     builder.effects,
     builder.viewFn,
-    builder.alwaysTransitions
+    builder.alwaysTransitions,
+    builder.propsSchema
   );
 }
 
@@ -284,7 +310,10 @@ let Builder = {
     throw new Error(`Not yet implemented.`);
   },
   model(schema) {
-    return createBuilder(this.initial, schema, this.states, this.effects, this.viewFn);
+    return createBuilder(this.initial, schema, this.states, this.effects, this.viewFn, this.alwaysTransitions, this.propsSchema);
+  },
+  props(schema) {
+    return createBuilder(this.initial, this.model, this.states, this.effects, this.viewFn, this.alwaysTransitions, schema);
   },
   states(names) {
     let desc = {};
@@ -295,7 +324,7 @@ let Builder = {
         invoke: null,
       };
     }
-    return createBuilder(names[0], this.model, desc, this.effects, this.viewFn);
+    return createBuilder(names[0], this.model, desc, this.effects, this.viewFn, this.alwaysTransitions, this.propsSchema);
   },
   events(state, events) {
     // TODO validate state exists
@@ -350,7 +379,7 @@ let Builder = {
     return createBuilder(this.initial, this.model, this.states, {
       ...this.effects,
       [key]: mergeArray(this.effects[key], effect(effectFn)),
-    }, this.viewFn, this.alwaysTransitions);
+    }, this.viewFn, this.alwaysTransitions, this.propsSchema);
   },
   always(event, ...args) {
     const newAlwaysTransitions = mergeArray(this.alwaysTransitions, { event, args });
@@ -360,7 +389,8 @@ let Builder = {
       this.states,
       this.effects,
       this.viewFn,
-      newAlwaysTransitions
+      newAlwaysTransitions,
+      this.propsSchema
     );
   },
   invoke(state, fn) {
@@ -372,13 +402,14 @@ let Builder = {
     });
   },
   view(fn) {
-    return createBuilder(this.initial, this.model, this.states, this.effects, fn ?? null, this.alwaysTransitions);
+    return createBuilder(this.initial, this.model, this.states, this.effects, fn ?? null, this.alwaysTransitions, this.propsSchema);
   },
   actor(builder) {
     if (builder) {
       return Object.create(Actor, {
         machine: valueEnumerable(build(builder)),
         viewFn: valueEnumerable(builder.viewFn),
+        propsSchema: valueEnumerable(builder.propsSchema),
         service: valueEnumerableWritable(undefined),
       });
     } else {

@@ -21,6 +21,7 @@ type RawShape = {
   model: {
     [k: string]: any;
   },
+  props?: StandardSchemaV1 | undefined;
   selectors: {
     [s1 in string]: {};
   };
@@ -46,6 +47,9 @@ type GetTransitions<R extends RawShape, S extends GetStates<R>, E extends GetEve
 type GetModelKeys<R extends RawShape> = keyof StandardSchemaV1.InferOutput<R['model']> extends string ? keyof StandardSchemaV1.InferOutput<R['model']> : never;
 type GetModelKeyType<R extends RawShape, K extends GetModelKeys<R>> = StandardSchemaV1.InferOutput<R['model']>[K];
 
+// Props types
+type GetPropsType<R extends RawShape> = R['props'] extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<R['props']> : any;
+
 // Setters
 type AddSelector<R extends RawShape, S extends string> = util.extendShape<R, {
   selectors: util.extendShape<R['selectors'], {
@@ -61,6 +65,7 @@ type AddState<R extends RawShape, S extends string, B = {}, I = undefined> = uti
   }>
 }>;
 type AddModel<R extends RawShape, S extends StandardSchemaV1> = util.extendShape<R, { model: S }>;
+type AddProps<R extends RawShape, S extends StandardSchemaV1> = util.extendShape<R, { props: S }>;
 type AddEvent<R extends RawShape, S extends GetStates<R>, E extends string, D extends readonly string[] = []> = AddState<
   R,
   S,
@@ -101,18 +106,18 @@ type SendFunction<R extends RawShape> = (event: GetAllEvents<R> | { type: GetAll
 
 // Standard Schema is now used for all model definitions
 
-// Event
-type MachineEvent<R extends RawShape, T = any> = {
-  type: GetAllEvents<R>;
-  data: T;
+// Event - conditional type for props events
+type MachineEvent<R extends RawShape, E extends GetAllEvents<R> = GetAllEvents<R>, T = any> = {
+  type: E;
+  data: E extends 'props' ? GetPropsType<R> : T;
   domEvent: Event;
   model: {
     [k in GetModelKeys<R>]: GetModelKeyType<R, k>
   };
   state: GetStates<R>;
   root: Component;
-  send(type: string, data?: T): void;
-  send({ type: T }): void;
+  send(type: string, data?: any): void;
+  send({ type: any }): void;
   sendEvent: (type: string, domEvent: Event) => void;
 };
 
@@ -178,6 +183,7 @@ type BuilderType<R extends RawShape> = {
 
   // Data model
   model<S extends StandardSchemaV1>(schema: S): BuilderType<AddModel<R, S>>;
+  props<S extends StandardSchemaV1>(schema: S): BuilderType<AddProps<R, S>>;
 
   // FSM
   states<const S extends readonly string[]>(

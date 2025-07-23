@@ -85,14 +85,33 @@ Update your model or perform side effects:
 )
 ```
 
-### 7. Always Transitions
+### 7. Props
+Define and validate props passed to your components:
+
+```typescript
+import * as v from 'valibot';
+
+bb.props(v.object({
+  userId: v.string(),
+  theme: v.pipe(v.string(), v.picklist(['light', 'dark'])),
+  isAdmin: v.boolean()
+}))
+```
+
+Props are automatically validated and can be handled with always transitions:
+
+```typescript
+.always('props', bb.assign('userId', ({ data }) => data.userId))
+```
+
+### 8. Always Transitions
 Handle events that can occur in any state without transitioning:
 
 ```typescript
-.always('props', bb.assign('connected', ({ domEvent }) => domEvent.detail.connected))
+.always('props', bb.assign('connected', ({ data }) => data.connected))
 ```
 
-### 8. Views
+### 9. Views
 Render UI based on current state and model:
 
 ```typescript
@@ -294,6 +313,64 @@ bb.model(s.object({
 ```
 
 **Note:** BeepBoop's built-in schema types are minimal and provide only basic type checking. For validation, transformations, and robust type safety, use external libraries like Valibot, Zod, or ArkType.
+
+### `bb.props(schema)`
+Define and validate props passed to your components using any Standard Schema-compliant validation library. Props are automatically validated when the component mounts and updates.
+
+```typescript
+import * as v from 'valibot';
+
+bb.props(v.object({
+  userId: v.string(),
+  theme: v.pipe(v.string(), v.picklist(['light', 'dark'])),
+  isAdmin: v.boolean(),
+  settings: v.object({
+    notifications: v.boolean(),
+    language: v.string()
+  })
+}))
+```
+
+**Key Features:**
+- **Automatic validation**: Props are validated on component mount and updates
+- **Error handling**: Invalid props throw descriptive validation errors  
+- **Type safety**: TypeScript provides proper typing for props in event handlers
+- **Standard Schema support**: Works with any Standard Schema library (Valibot, Zod, ArkType)
+- **Optional**: If no props schema is defined, props remain unvalidated (`any` type)
+
+**Handling Props in State Machines:**
+Props are passed through the special `'props'` event and are typically handled with always transitions:
+
+```typescript
+bb.props(v.object({
+  userId: v.string(),
+  theme: v.string()
+}))
+.always('props', 
+  bb.assign('userId', ({ data }) => data.userId),    // data.userId is typed as string
+  bb.assign('theme', ({ data }) => data.theme)       // data.theme is typed as string  
+)
+```
+
+**Usage with Components:**
+```typescript
+const UserProfile = actor.view();
+
+// Valid props - renders successfully
+render(h(UserProfile, { 
+  userId: '123', 
+  theme: 'dark',
+  isAdmin: true,
+  settings: { notifications: true, language: 'en' }
+}), container);
+
+// Invalid props - throws validation error
+render(h(UserProfile, { 
+  userId: 123,        // Error: Expected string, got number
+  theme: 'purple',    // Error: Expected 'light' or 'dark'
+  isAdmin: 'yes'      // Error: Expected boolean, got string
+}), container);
+```
 
 ### `.states(stateArray)`
 Define all possible states your machine can be in. States represent different modes or phases of your application.
