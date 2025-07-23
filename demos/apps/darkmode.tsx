@@ -1,12 +1,18 @@
 import { bb } from '@matthewp/beepboop';
+import * as s from '@matthewp/beepboop/schema';
 
 let machine = bb
-  .model({
-    mode: bb.string(),
-    dark: bb.boolean(),
-    emoji: bb.string(),
-  })
-  .states(['idle'])
+  .model(s.object({
+    mode: s.string(),
+    dark: s.boolean(),
+    emoji: s.string(),
+  }))
+  .states(['setup', 'idle'])
+  .immediate('setup', 'idle', 
+    bb.assign('mode', () => 'light'),
+    bb.assign('dark', () => false),
+    bb.assign('emoji', () => '☀️')
+  )
   .events('idle', ['toggle'])
   .transition(
     'idle',

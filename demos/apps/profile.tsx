@@ -1,10 +1,11 @@
 import { bb } from '@matthewp/beepboop';
+import * as s from '@matthewp/beepboop/schema';
 
 let machine = bb
-  .model({
-    name: bb.string(),
-    age: bb.number()
-  })
+  .model(s.object({
+    name: s.string(),
+    age: s.number()
+  }))
   .states(['idle'] as const)
   .events('idle', ['change-name', 'change-age'] as const)
   .transition('idle', 'change-name', 'idle',

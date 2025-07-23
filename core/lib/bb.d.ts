@@ -1,5 +1,6 @@
 import { Component } from 'preact';
 import { type GetSelectors as GetTemplateSelectors } from 'ts-types-html-parser';
+import type { StandardSchemaV1 } from '@standard-schema/spec';
 
 declare namespace util {
   type ArrayElement<ArrayType extends readonly unknown[]> =
@@ -42,8 +43,8 @@ type GetAllEvents<R extends RawShape> = util.AllKeys<R['states'][GetStates<R>]['
 type GetImmediates<R extends RawShape, S extends GetStates<R>> =
   R['states'][S]['immediates'] extends undefined ? [] : R['states'][S]['immediates'];
 type GetTransitions<R extends RawShape, S extends GetStates<R>, E extends GetEvents<R, S>> = R['states'][S]['events'][E];
-type GetModelKeys<R extends RawShape> = keyof R['model'] extends string ? keyof R['model'] : never;
-type GetModelKeyType<R extends RawShape, K extends GetModelKeys<R>> = R['model'][K][typeof underlyingTypeSymbol];
+type GetModelKeys<R extends RawShape> = keyof StandardSchemaV1.InferOutput<R['model']> extends string ? keyof StandardSchemaV1.InferOutput<R['model']> : never;
+type GetModelKeyType<R extends RawShape, K extends GetModelKeys<R>> = StandardSchemaV1.InferOutput<R['model']>[K];
 
 // Setters
 type AddSelector<R extends RawShape, S extends string> = util.extendShape<R, {
@@ -59,7 +60,7 @@ type AddState<R extends RawShape, S extends string, B = {}, I = undefined> = uti
     };
   }>
 }>;
-type AddModel<R extends RawShape, M extends ModelSchema> = util.extendShape<R, { model: M }>;
+type AddModel<R extends RawShape, S extends StandardSchemaV1> = util.extendShape<R, { model: S }>;
 type AddEvent<R extends RawShape, S extends GetStates<R>, E extends string, D extends readonly string[] = []> = AddState<
   R,
   S,
@@ -98,18 +99,7 @@ type ReduceType<R extends RawShape> = util.brand<{
 type ExtraType<R extends RawShape> = GuardType<R> | ReduceType<R>;
 type SendFunction<R extends RawShape> = (event: GetAllEvents<R> | { type: GetAllEvents<R>;[key: string]: any }) => void;
 
-// Data model
-declare const underlyingTypeSymbol: unique symbol;
-type BBType<T = any> = util.brand<{ [underlyingTypeSymbol]: T; }, 'bbtype'>;
-type BBString = util.brand<{ [underlyingTypeSymbol]: string; }, 'bbstring'>;
-type BBNumber = util.brand<{ [underlyingTypeSymbol]: number; }, 'bbnumber'>;
-type BBBool = util.brand<{ [underlyingTypeSymbol]: boolean; }, 'bbbool'>;
-type BBObject = util.brand<{ [underlyingTypeSymbol]: {}; }, 'bbobj'>;
-type BBArray = util.brand<{ [underlyingTypeSymbol]: Array<any> }, 'bbarray'>;
-type BBSchemaType = BBString | BBNumber | BBBool | BBObject | BBArray | BBType | Actor;
-type ModelSchema = {
-  [k: string]: BBSchemaType
-};
+// Standard Schema is now used for all model definitions
 
 // Event
 type MachineEvent<R extends RawShape, T = any> = {
@@ -187,13 +177,7 @@ type BuilderType<R extends RawShape> = {
   ): BuilderType<R>;
 
   // Data model
-  model<MS extends ModelSchema>(schema: MS): BuilderType<AddModel<R, MS>>;
-  string(initialValue?: string): BBString;
-  number(initialValue?: number): BBNumber;
-  boolean(initialValue?: boolean): BBBool;
-  object(o: { [k: string]: BBSchemaType }): BBObject;
-  array(arr: BBSchemaType): BBArray;
-  type<T>(): BBType<T>;
+  model<S extends StandardSchemaV1>(schema: S): BuilderType<AddModel<R, S>>;
 
   // FSM
   states<const S extends readonly string[]>(

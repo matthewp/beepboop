@@ -1,4 +1,5 @@
 import { bb } from '../lib/bb.js';
+import * as s from '../lib/schema.js';
 import { interpret } from 'robot3';
 
 QUnit.module('BeepBoop Invoke Tests');
@@ -11,7 +12,7 @@ QUnit.test('invoke method can be chained', function(assert) {
   const mockFn = async () => 'test';
   
   const machine = bb
-    .model({ data: bb.string('') })
+    .model(s.object({ data: s.string() }))
     .states(['idle', 'loading'])
     .invoke('loading', mockFn);
   
@@ -23,7 +24,7 @@ QUnit.test('invoke state configuration is stored', function(assert) {
   const mockFn = async () => 'test';
   
   const machine = bb
-    .model({ data: bb.string('') })
+    .model(s.object({ data: s.string() }))
     .states(['idle', 'loading'])
     .invoke('loading', mockFn);
   
@@ -38,7 +39,7 @@ QUnit.test('invoke replaces previous invoke on same state', function(assert) {
   const mockFn2 = async () => 'test2';
   
   const machine = bb
-    .model({ data: bb.string('') })
+    .model(s.object({ data: s.string() }))
     .states(['idle', 'loading'])
     .invoke('loading', mockFn1)
     .invoke('loading', mockFn2);
@@ -57,10 +58,10 @@ QUnit.test('invoke works with complete machine definition', async function(asser
   };
   
   const machine = bb
-    .model({ 
-      data: bb.type(),
-      loading: bb.boolean(false)
-    })
+    .model(s.object({ 
+      data: s.type(),
+      loading: s.boolean()
+    }))
     .states(['idle', 'loading', 'success'])
     .events('idle', ['fetch'])
     .events('loading', ['done'])

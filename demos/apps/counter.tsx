@@ -1,10 +1,12 @@
 import { bb } from '@matthewp/beepboop';
+import * as s from '@matthewp/beepboop/schema';
 
 let machine = bb
-  .model({
-    count: bb.number(5)
-  })
-  .states(['idle', 'increment', 'decrement'])
+  .model(s.object({
+    count: s.number()
+  }))
+  .states(['setup', 'idle', 'increment', 'decrement'])
+  .immediate('setup', 'idle', bb.assign('count', () => 5))
   .events('idle', ['increment', 'decrement'])
   .transition('idle', 'increment', 'increment')
   .transition(

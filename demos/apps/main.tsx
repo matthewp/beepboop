@@ -6,13 +6,8 @@ import darkmode from './darkmode';
 import { Component, h } from 'preact';
 
 let machine = bb
-  .model({
-    counter,
-    darkmode,
-    profile,
-  })
   .states(['idle'])
-  .view(({ model }) => {
+  .view(() => {
     const DarkMode = darkmode.view();
     const Counter = counter.view();
     const Profile = profile.view();

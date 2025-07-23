@@ -15,15 +15,31 @@ npm install @matthewp/beepboop
 ## Core Concepts
 
 ### 1. Models
-Define your application state with typed properties:
+Define your application state using Standard Schema-compliant validation libraries. BeepBoop accepts any Standard Schema library like [Zod](https://zod.dev/), [Valibot](https://valibot.dev/), or [ArkType](https://arktype.io/):
 
 ```typescript
-bb.model({
-  count: bb.number(0),      // number with default value
-  name: bb.string(''),      // string with default value  
-  isDark: bb.boolean(false) // boolean with default value
-})
+import * as v from 'valibot';
+
+bb.model(v.object({
+  count: v.number(),    // number type
+  name: v.string(),     // string type
+  isDark: v.boolean()   // boolean type
+}))
 ```
+
+For basic types, BeepBoop provides minimal schema types:
+
+```typescript
+import * as s from '@matthewp/beepboop/schema';
+
+bb.model(s.object({
+  count: s.number(),    // basic number type
+  name: s.string(),     // basic string type
+  isDark: s.boolean()   // basic boolean type
+}))
+```
+
+Models start empty and are populated using immediate transitions from a setup state.
 
 ### 2. States
 Define the possible states your machine can be in:
@@ -92,16 +108,18 @@ Render UI based on current state and model:
 
 ## Quick Example
 
-Here's a simple counter application:
+Here's a simple counter application using Valibot for validation:
 
 ```typescript
 import { bb } from '@matthewp/beepboop';
+import * as v from 'valibot';
 
 const counterMachine = bb
-  .model({
-    count: bb.number(0)
-  })
-  .states(['idle', 'increment', 'decrement'])
+  .model(v.object({
+    count: v.number()
+  }))
+  .states(['setup', 'idle', 'increment', 'decrement'])
+  .immediate('setup', 'idle', bb.assign('count', () => 0))
   .events('idle', ['increment', 'decrement'])
   .transition('idle', 'increment', 'increment')
   .transition(
@@ -144,7 +162,7 @@ actor.mount(document.querySelector('#app'));
 
 ### Composing Multiple Machines
 
-You can compose multiple machines together:
+You can compose multiple machines together by using their views directly:
 
 ```typescript
 import counter from './counter';
@@ -152,13 +170,8 @@ import profile from './profile';
 import darkmode from './darkmode';
 
 const appMachine = bb
-  .model({
-    counter,
-    darkmode,
-    profile,
-  })
   .states(['idle'])
-  .view(({ model }) => {
+  .view(() => {
     const DarkMode = darkmode.view();
     const Counter = counter.view();
     const Profile = profile.view();
@@ -187,45 +200,100 @@ const machine = bb.model({ /* ... */ });
 ```
 
 ### `bb.model(schema)`
-Define the shape of your application state. The schema object maps property names to typed values created with `bb.string()`, `bb.number()`, `bb.boolean()`, etc.
+Define the shape of your application state using any Standard Schema-compliant validation library. BeepBoop requires object schemas.
+
+## Recommended Validation Libraries
+
+We recommend using robust validation libraries for production applications:
+
+### [Valibot](https://valibot.dev/) (Recommended)
+A modular and type-safe schema library:
 
 ```typescript
-bb.model({
-  username: bb.string('anonymous'),
-  score: bb.number(0),
-  isActive: bb.boolean(true)
-})
+import * as v from 'valibot';
+
+bb.model(v.object({
+  email: v.pipe(v.string(), v.email()),
+  age: v.pipe(v.number(), v.minValue(18)),
+  role: v.picklist(['admin', 'user', 'guest'])
+}))
 ```
 
-### `bb.string(initialValue?)` 
-Create a string property with an optional initial value. If no initial value is provided, it defaults to `undefined`.
+### [Zod](https://zod.dev/)
+The most popular TypeScript-first schema validation library:
 
 ```typescript
-bb.model({
-  name: bb.string('John'),      // Initial value: 'John'
-  email: bb.string()            // Initial value: undefined
-})
+import { z } from 'zod';
+
+bb.model(z.object({
+  email: z.string().email(),
+  age: z.number().min(18),
+  role: z.enum(['admin', 'user', 'guest'])
+}))
 ```
 
-### `bb.number(initialValue?)`
-Create a number property with an optional initial value. If no initial value is provided, it defaults to `undefined`.
+### [ArkType](https://arktype.io/)
+Runtime validation with TypeScript syntax:
 
 ```typescript
-bb.model({
-  count: bb.number(0),          // Initial value: 0
-  temperature: bb.number()      // Initial value: undefined
-})
+import { type } from 'arktype';
+
+bb.model(type({
+  email: 'string>5',
+  age: 'number>=18',
+  role: "'admin'|'user'|'guest'"
+}))
 ```
 
-### `bb.boolean(initialValue?)`
-Create a boolean property with an optional initial value. If no initial value is provided, it defaults to `undefined`.
+### Mixing Libraries
+You can mix different Standard Schema libraries:
 
 ```typescript
-bb.model({
-  isDarkMode: bb.boolean(false), // Initial value: false
-  isLoggedIn: bb.boolean()       // Initial value: undefined
-})
+import * as v from 'valibot';
+import { z } from 'zod';
+
+bb.model(v.object({
+  name: v.string(),                    // Valibot
+  email: z.string().email(),           // Zod  
+  age: v.pipe(v.number(), v.minValue(18)) // Valibot with validation
+}))
 ```
+
+## Basic Schema Types
+
+For simple use cases, BeepBoop provides minimal schema types:
+
+```typescript
+import * as s from '@matthewp/beepboop/schema';
+```
+
+### `s.string()`, `s.number()`, `s.boolean()`, `s.type()`
+Basic primitive types without validation:
+
+```typescript
+bb.model(s.object({
+  name: s.string(),      // Basic string
+  count: s.number(),     // Basic number  
+  active: s.boolean(),   // Basic boolean
+  data: s.type()         // Any type
+}))
+```
+
+### `s.object(properties)` and `s.array(elementSchema?)`
+Basic composite types:
+
+```typescript
+bb.model(s.object({
+  user: s.object({
+    name: s.string(),
+    age: s.number()
+  }),
+  tags: s.array(s.string()),
+  items: s.array() // Array of any type
+}))
+```
+
+**Note:** BeepBoop's built-in schema types are minimal and provide only basic type checking. For validation, transformations, and robust type safety, use external libraries like Valibot, Zod, or ArkType.
 
 ### `.states(stateArray)`
 Define all possible states your machine can be in. States represent different modes or phases of your application.
@@ -273,6 +341,22 @@ Define a transition that happens automatically without waiting for an event. Use
 // With a guard to conditionally transition
 .immediate('checking', 'error',
   bb.guard(({ model }) => !model.isValid)
+)
+```
+
+### `.invoke(state, asyncFunction)`
+Define an async function that runs when entering a state. The function receives the event context and can return a promise. When the promise resolves, a 'done' event is automatically sent with the result. If the promise rejects, an 'error' event is sent.
+
+```typescript
+.invoke('loading', async ({ model }) => {
+  const response = await fetch(`/api/users/${model.userId}`);
+  return response.json();
+})
+.transition('loading', 'done', 'success', 
+  bb.assign('user', ({ data }) => data)
+)
+.transition('loading', 'error', 'error',
+  bb.assign('errorMessage', ({ data }) => data.message)
 )
 ```
 
@@ -381,8 +465,12 @@ Define the UI component that renders based on the current state and model. The c
 Create an actor instance from your machine definition. Actors are the runtime instances that manage state and handle events.
 
 ```typescript
-const machine = bb.model({ count: bb.number(0) })
-  .states(['idle'])
+import * as v from 'valibot';
+
+const machine = bb
+  .model(v.object({ count: v.number() }))
+  .states(['setup', 'idle'])
+  .immediate('setup', 'idle', bb.assign('count', () => 0))
   .view(({ model }) => <div>{model.count}</div>);
 
 const actor = bb.actor(machine);

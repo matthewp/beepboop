@@ -41,26 +41,6 @@ let mutateAction = (fns, key) =>
     }
   });
 
-// Schema modeling
-let StringType = {
-  coerce: raw => '' + raw
-};
-let BooleanType = {
-  coerce: raw => Boolean(raw)
-};
-let NumberType = {
-  coerce: raw => Number(raw)
-};
-let ArrayType = {};
-let AnyType = {
-  coerce: raw => raw
-};
-
-let isSchemaType = (val) => StringType.isPrototypeOf(val) ||
-  NumberType.isPrototypeOf(val) ||
-  BooleanType.isPrototypeOf(val) ||
-  ArrayType.isPrototypeOf(val) ||
-  AnyType.isPrototypeOf(val);
 
 class EventDetails {
   constructor(type, domEvent, data, actor) {
@@ -134,7 +114,6 @@ class Component extends PreactComponent {
 }
 
 let Actor = {
-  __proto__: AnyType,
   mount(selector) {
     let el =
       typeof selector === 'string'
@@ -176,28 +155,10 @@ let Actor = {
   }
 };
 
-function createDefaultModel(schema) {
-  let model = {};
-  for (const [key, type] of Object.entries(schema)) {
-    // Create default values based on type
-    if (isSchemaType(type)) {
-      model[key] = type.value;
-    }
-  }
-  return model;
-}
-
-const buildDefaultModelFn = (schema) => () => createDefaultModel(schema);
 
 function build(builder) {
   let effects = builder.effects;
 
-  // If there's a view function, create view effects for all model keys
-  if (builder.viewFn) {
-    for (let key in builder.model) {
-      effects[key] = mergeArray(effects[key], viewEffect());
-    }
-  }
 
   // Process always transitions - apply to all states
   let states = { ...builder.states };
@@ -220,8 +181,9 @@ function build(builder) {
           if (AssignType.isPrototypeOf(type)) {
             let key = type.key;
             args.push(reduce(type.reducer.bind(type)));
-            if (typeof effects[key] !== 'undefined') {
-              args.push(mutateAction(effects[key], key));
+            // Always add view effect if there's a view function
+            if (builder.viewFn) {
+              args.push(mutateAction([viewEffect()], key));
             }
           } else {
             args.push(type);
@@ -243,8 +205,9 @@ function build(builder) {
           if (AssignType.isPrototypeOf(type)) {
             let key = type.key;
             args.push(reduce(type.reducer.bind(type)));
-            if (typeof effects[key] !== 'undefined') {
-              args.push(mutateAction(effects[key], key));
+            // Always add view effect if there's a view function
+            if (builder.viewFn) {
+              args.push(mutateAction([viewEffect()], key));
             }
           } else {
             args.push(type);
@@ -261,8 +224,8 @@ function build(builder) {
     }
   }
 
-  // Always use default model creation
-  let modelFn = buildDefaultModelFn(builder.model);
+  // Start with empty model - users set initial values via transitions
+  let modelFn = () => ({});
 
   // Add the initial state that immediately transitions to the builder's initial state
   let initialArgs = [];
@@ -323,29 +286,6 @@ let Builder = {
   model(schema) {
     return createBuilder(this.initial, schema, this.states, this.effects, this.viewFn);
   },
-  string(initialValue) {
-    return create(StringType, {
-      value: {
-        value: initialValue
-      }
-    });
-  },
-  number(initialValue) {
-    return create(NumberType, {
-      value: {
-        value: initialValue
-      }
-    });
-  },
-  boolean(initialValue) {
-    return create(BooleanType, {
-      value: {
-        value: initialValue
-      }
-    });
-  },
-  array() { return create(ArrayType); },
-  type() { return undefined; },
   states(names) {
     let desc = {};
     for (let name of names) {
