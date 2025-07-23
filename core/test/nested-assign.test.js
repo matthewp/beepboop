@@ -24,8 +24,7 @@ QUnit.test('nested assignment works with simple nested objects', function(assert
     )
     .view(({ model }) => h('div', null, `${model.user.name}-${model.user.age}-${model.settings.theme}`));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   const container = document.createElement('div');
   
   render(h(Component, {}), container);
@@ -53,8 +52,7 @@ QUnit.test('nested assignment works with deep nesting', function(assert) {
     )
     .view(({ model }) => h('div', null, model.config.ui.colors.primary));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   const container = document.createElement('div');
   
   render(h(Component, {}), container);
@@ -88,8 +86,7 @@ QUnit.test('nested assignment updates only the nested property', function(assert
     )
     .view(({ model, send }) => h('div', null, model.user.name));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   const container = document.createElement('div');
   
   render(h(Component, {}), container);
@@ -129,8 +126,7 @@ QUnit.test('nested assignment with external schema library (Valibot)', function(
       h('div', null, `${model.profile.personal.firstName} ${model.profile.personal.lastName} (${model.profile.preferences.theme})`)
     );
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   const container = document.createElement('div');
   
   render(h(Component, {}), container);
@@ -155,8 +151,7 @@ QUnit.test('flat assignment still works alongside nested assignment', function(a
     )
     .view(({ model }) => h('div', null, `${model.name}: ${model.user.email}`));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   const container = document.createElement('div');
   
   render(h(Component, {}), container);
@@ -191,8 +186,7 @@ QUnit.test('nested assignment handles props correctly', function(assert) {
     )
     .view(({ model }) => h('div', null, `${model.user.name}:${model.user.settings.theme}`));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   const container = document.createElement('div');
   
   const props = { userName: 'PropsUser', userTheme: 'dark' };

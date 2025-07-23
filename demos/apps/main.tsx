@@ -1,16 +1,13 @@
 import { bb } from '@matthewp/beepboop';
 
-import counter from './counter';
-import profile from './profile';
-import darkmode from './darkmode';
+import Counter from './counter';
+import Profile from './profile';
+import DarkMode from './darkmode';
 import { Component, h } from 'preact';
 
 let machine = bb
   .states(['idle'])
   .view(() => {
-    const DarkMode = darkmode.view();
-    const Counter = counter.view();
-    const Profile = profile.view();
     return (
       <>
         <DarkMode />

@@ -144,7 +144,6 @@ declare const me: MachineEvent<any>;
 // Actor
 type Actor<R extends RawShape = any> = {
   mount(rootSelector: string | HTMLElement | Document): void;
-  view(): () => Component;
   interpret(): Actor<R>;
   send(eventType: GetAllEvents<R>, data?: any): void;
   send(event: { type: GetAllEvents<R>; [key: string]: any }): void;
@@ -198,6 +197,7 @@ type BuilderType<R extends RawShape> = {
       send: SendFunction<R>;
     }) => any
   ): BuilderType<R>;
+  view<M extends RawShape>(machine: M & { viewFn: any }): (props?: any) => Component;
 
   // Data model
   model<S extends StandardSchemaV1>(schema: S): BuilderType<AddModel<R, S>>;

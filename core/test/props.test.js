@@ -38,8 +38,7 @@ QUnit.test('props validation works with valid props', function(assert) {
     .states(['idle'])
     .view(() => h('div', null, 'Test'));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   
   // Create a temporary container for rendering
   const container = document.createElement('div');
@@ -63,8 +62,7 @@ QUnit.test('props validation throws with invalid props', function(assert) {
     .states(['idle'])
     .view(() => h('div', null, 'Test'));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   
   const container = document.createElement('div');
   
@@ -83,8 +81,7 @@ QUnit.test('props validation with external schema library (Valibot)', function(a
     .states(['idle'])
     .view(() => h('div', null, 'Test'));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   
   const container1 = document.createElement('div');
   const container2 = document.createElement('div');
@@ -111,8 +108,7 @@ QUnit.test('no props schema means no validation', function(assert) {
     .states(['idle'])
     .view(() => h('div', null, 'NoValidation'));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   
   const container = document.createElement('div');
   
@@ -142,8 +138,7 @@ QUnit.test('props are passed to always transitions correctly', function(assert) 
     }))
     .view(({ model }) => h('div', null, model.name));
 
-  const actor = bb.actor(machine);
-  const Component = actor.view();
+  const Component = bb.view(machine);
   
   const container = document.createElement('div');
   const props = { userName: 'TestUser' };

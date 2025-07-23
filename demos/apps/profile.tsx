@@ -38,4 +38,4 @@ let machine = bb
     );
   });
 
-export default bb.actor(machine);
+export default bb.view(machine);

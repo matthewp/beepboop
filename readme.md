@@ -181,20 +181,25 @@ actor.mount(document.querySelector('#app'));
 
 ### Composing Multiple Machines
 
-You can compose multiple machines together by using their views directly:
+You can compose multiple machines together by creating view components from each machine:
 
 ```typescript
-import counter from './counter';
-import profile from './profile';
-import darkmode from './darkmode';
+// counter.tsx - Export view component directly
+const machine = bb./* machine definition */.view(/* view function */);
+export default bb.view(machine);
+
+// profile.tsx - Export view component directly  
+const machine = bb./* machine definition */.view(/* view function */);
+export default bb.view(machine);
+
+// main.tsx - Import and use components directly
+import Counter from './counter';
+import Profile from './profile';
+import DarkMode from './darkmode';
 
 const appMachine = bb
   .states(['idle'])
   .view(() => {
-    const DarkMode = darkmode.view();
-    const Counter = counter.view();
-    const Profile = profile.view();
-    
     return (
       <>
         <DarkMode />
@@ -354,7 +359,7 @@ bb.props(v.object({
 
 **Usage with Components:**
 ```typescript
-const UserProfile = actor.view();
+const UserProfile = bb.view(machine);
 
 // Valid props - renders successfully
 render(h(UserProfile, { 
@@ -611,14 +616,13 @@ actor.mount(document.getElementById('app'));
 actor.mount(document.body);
 ```
 
-### `actor.view()`
-Get a view component that can be rendered inside another beepboop component. This is used for composing multiple machines.
+### `bb.view(machine)`
+Create a view component directly from a machine. This is the primary way to create components from BeepBoop machines.
 
 ```typescript
-const counterActor = bb.actor(counterMachine);
-const Counter = counterActor.view();
+const Counter = bb.view(counterMachine);
 
-// Use in another machine's view
+// Use directly or in another machine's view
 .view(() => {
   return (
     <div>

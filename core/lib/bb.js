@@ -94,7 +94,15 @@ class EventDetails {
 class Component extends PreactComponent {
   constructor(props) {
     super(props);
-    this.actor = Object.create(props.actor);
+    
+    // Create a proper actor from the built machine
+    this.actor = Object.create(Actor, {
+      machine: valueEnumerable(props.machine),
+      viewFn: valueEnumerable(props.viewFn),
+      propsSchema: valueEnumerable(props.propsSchema),
+      service: valueEnumerableWritable(undefined),
+    });
+    
     this.actor.send = this.actor.send.bind(this.actor);
     this.actor.sendEvent = this.actor.sendEvent.bind(this.actor);
     this.actor.init(this);
@@ -143,10 +151,20 @@ let Actor = {
       typeof selector === 'string'
         ? document.querySelector(selector)
         : selector;
-    // Render the view with the actual model from the service
-    if (this.viewFn) {
-      render(createElement(this.view()), el);
+    
+    if (!this.viewFn) {
+      throw new Error('Cannot mount actor without a view function. Use bb.view(machine) to create a mountable component.');
     }
+    
+    // Create component directly with machine data
+    const component = createElement(Component, { 
+      machine: this.machine, 
+      viewFn: this.viewFn,
+      propsSchema: this.propsSchema,
+      props: {} 
+    });
+    
+    render(component, el);
   },
   init(component) {
     this.component = component;
@@ -173,9 +191,6 @@ let Actor = {
   },
   sendEvent(eventType, domEvent) {
     this.service?.send(new EventDetails(eventType, domEvent, null, this));
-  },
-  view() {
-    return (props) => createElement(Component, { actor: this, props });
   }
 };
 
@@ -418,8 +433,30 @@ let Builder = {
       [state]: desc,
     });
   },
-  view(fn) {
-    return createBuilder(this.initial, this.model, this.states, this.effects, fn ?? null, this.alwaysTransitions, this.propsSchema);
+  view(fnOrMachine) {
+    // If it's a function, it's the old .view(fn) for setting the view function
+    if (typeof fnOrMachine === 'function') {
+      return createBuilder(this.initial, this.model, this.states, this.effects, fnOrMachine ?? null, this.alwaysTransitions, this.propsSchema);
+    }
+    
+    // If it's a Builder object (machine), it's the new bb.view(machine) for creating a component
+    if (Builder.isPrototypeOf(fnOrMachine)) {
+      if (!fnOrMachine.viewFn) {
+        throw new Error('bb.view(machine) requires a machine with a view function. Use .view() on your machine builder first.');
+      }
+      
+      const builtMachine = build(fnOrMachine);
+      
+      return (props) => createElement(Component, { 
+        machine: builtMachine, 
+        viewFn: fnOrMachine.viewFn,
+        propsSchema: fnOrMachine.propsSchema,
+        props 
+      });
+    }
+    
+    // Invalid argument
+    throw new Error('bb.view() expects either a view function or a machine builder.');
   },
   actor(builder) {
     if (builder) {
