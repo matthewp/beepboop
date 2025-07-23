@@ -505,6 +505,50 @@ bb.assign('message', ({ model, state }) =>
 )
 ```
 
+#### Nested Property Assignment
+BeepBoop supports assigning to nested properties using dot notation. This provides type-safe access to deeply nested model data:
+
+```typescript
+import * as v from 'valibot';
+
+const machine = bb
+  .model(v.object({
+    user: v.object({
+      name: v.string(),
+      profile: v.object({
+        bio: v.string(),
+        settings: v.object({
+          theme: v.picklist(['light', 'dark'])
+        })
+      })
+    })
+  }))
+  .states(['idle'])
+  .always('updateUser',
+    // Update nested properties with full type safety
+    bb.assign('user.name', ({ data }) => data.name),
+    bb.assign('user.profile.bio', ({ data }) => data.bio),
+    bb.assign('user.profile.settings.theme', ({ data }) => data.theme)
+  );
+```
+
+**Key Features:**
+- **Type Safety**: TypeScript will error if you try to assign to invalid paths like `'user.nonexistent'`
+- **Auto-completion**: Your editor will provide intelligent suggestions for available nested paths
+- **Runtime Efficiency**: Only the specific nested property is mutated, not the entire object tree
+- **Standard Schema Support**: Works with any Standard Schema library (Valibot, Zod, ArkType, etc.)
+
+**Valid Assignment Patterns:**
+```typescript
+bb.assign('user', ({ data }) => data.user)              // Assign entire object
+bb.assign('user.name', ({ data }) => data.name)         // Assign nested property
+bb.assign('user.profile.bio', ({ data }) => data.bio)   // Assign deeply nested property
+
+// TypeScript will catch invalid paths at compile time:
+bb.assign('user.invalid', ({ data }) => data.value)     // ❌ TypeScript error
+bb.assign('user.name.length', ({ data }) => 5)          // ❌ TypeScript error (string has no assignable properties)
+```
+
 ### `.effect(key, fn)`
 Create a model effect that runs when a specific model property changes.
 

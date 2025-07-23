@@ -1,5 +1,4 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
-import type { BuilderType, RawShape } from './bb.js';
 
 // BeepBoop string schema
 export interface BeepBoopString extends StandardSchemaV1<string, string> {
@@ -9,6 +8,10 @@ export interface BeepBoopString extends StandardSchemaV1<string, string> {
     readonly validate: (input: unknown) => 
       | { value: string }
       | { issues: Array<{ message: string; path: Array<string | number> }> };
+    readonly types: {
+      readonly input: string;
+      readonly output: string;
+    };
   };
 }
 
@@ -20,6 +23,10 @@ export interface BeepBoopNumber extends StandardSchemaV1<number, number> {
     readonly validate: (input: unknown) => 
       | { value: number }
       | { issues: Array<{ message: string; path: Array<string | number> }> };
+    readonly types: {
+      readonly input: number;
+      readonly output: number;
+    };
   };
 }
 
@@ -31,13 +38,17 @@ export interface BeepBoopBoolean extends StandardSchemaV1<boolean, boolean> {
     readonly validate: (input: unknown) => 
       | { value: boolean }
       | { issues: Array<{ message: string; path: Array<string | number> }> };
+    readonly types: {
+      readonly input: boolean;
+      readonly output: boolean;
+    };
   };
 }
 
 // Helper type to infer object schema output from properties
 type InferObjectProperties<T extends Record<string, StandardSchemaV1>> = {
   [K in keyof T]: StandardSchemaV1.InferOutput<T[K]>;
-};
+} & {};
 
 // BeepBoop object schema
 export interface BeepBoopObject<T extends Record<string, StandardSchemaV1>> 
@@ -48,6 +59,10 @@ export interface BeepBoopObject<T extends Record<string, StandardSchemaV1>>
     readonly validate: (input: unknown) => 
       | { value: InferObjectProperties<T> }
       | { issues: Array<{ message: string; path: Array<string | number> }> };
+    readonly types: {
+      readonly input: InferObjectProperties<T>;
+      readonly output: InferObjectProperties<T>;
+    };
   };
 }
 
@@ -60,6 +75,10 @@ export interface BeepBoopArray<T extends StandardSchemaV1 = StandardSchemaV1<any
     readonly validate: (input: unknown) => 
       | { value: Array<StandardSchemaV1.InferOutput<T>> }
       | { issues: Array<{ message: string; path: Array<string | number> }> };
+    readonly types: {
+      readonly input: Array<StandardSchemaV1.InferInput<T>>;
+      readonly output: Array<StandardSchemaV1.InferOutput<T>>;
+    };
   };
 }
 
@@ -71,6 +90,10 @@ export interface BeepBoopType<T = any> extends StandardSchemaV1<T, T> {
     readonly validate: (input: unknown) => 
       | { value: T }
       | { issues: Array<{ message: string; path: Array<string | number> }> };
+    readonly types: {
+      readonly input: T;
+      readonly output: T;
+    };
   };
 }
 

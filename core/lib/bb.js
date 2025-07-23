@@ -300,7 +300,24 @@ function appendStates(builder, states) {
 let AssignType = {
   reducer(ctx, ev) {
     let newValue = this.fn(ev);
-    ctx.model[this.key] = newValue;
+    
+    if (this.key.includes('.')) {
+      // Handle nested path like 'user.name'
+      const keys = this.key.split('.');
+      let obj = ctx.model;
+      
+      // Navigate to parent object
+      for (let i = 0; i < keys.length - 1; i++) {
+        obj = obj[keys[i]];
+      }
+      
+      // Set final property
+      obj[keys[keys.length - 1]] = newValue;
+    } else {
+      // Current behavior for flat keys
+      ctx.model[this.key] = newValue;
+    }
+    
     return ctx;
   },
 };

@@ -18,9 +18,7 @@ declare namespace util {
 }
 
 type RawShape = {
-  model: {
-    [k: string]: any;
-  },
+  model: StandardSchemaV1,
   props?: StandardSchemaV1 | undefined;
   selectors: {
     [s1 in string]: {};
@@ -44,11 +42,31 @@ type GetAllEvents<R extends RawShape> = util.AllKeys<R['states'][GetStates<R>]['
 type GetImmediates<R extends RawShape, S extends GetStates<R>> =
   R['states'][S]['immediates'] extends undefined ? [] : R['states'][S]['immediates'];
 type GetTransitions<R extends RawShape, S extends GetStates<R>, E extends GetEvents<R, S>> = R['states'][S]['events'][E];
-type GetModelKeys<R extends RawShape> = keyof StandardSchemaV1.InferOutput<R['model']> extends string ? keyof StandardSchemaV1.InferOutput<R['model']> : never;
-type GetModelKeyType<R extends RawShape, K extends GetModelKeys<R>> = StandardSchemaV1.InferOutput<R['model']>[K];
+type GetModelKeys<R extends RawShape> = NestedPaths<StandardSchemaV1.InferOutput<R['model']>>;
+type GetModelKeyType<R extends RawShape, K extends GetModelKeys<R>> = GetNestedType<StandardSchemaV1.InferOutput<R['model']>, K>;
 
 // Props types
 type GetPropsType<R extends RawShape> = R['props'] extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<R['props']> : any;
+
+// Debug nested path types step by step
+type NestedPaths<T> = T extends Record<string, any>
+  ? {
+      [K in keyof T & string]: T[K] extends Record<string, any>
+        ? T[K] extends readonly any[]
+          ? K // Arrays are terminal paths
+          : K | `${K}.${NestedPaths<T[K]>}`
+        : K;
+    }[keyof T & string]
+  : never;
+
+type GetNestedType<T, P extends string> = P extends `${infer K}.${infer Rest}`
+  ? K extends keyof T
+    ? GetNestedType<T[K], Rest>
+    : never
+  : P extends keyof T
+  ? T[P]
+  : never;
+
 
 // Setters
 type AddSelector<R extends RawShape, S extends string> = util.extendShape<R, {
@@ -229,7 +247,7 @@ type BuilderType<R extends RawShape> = {
   actor(): Actor<R>;
 }
 
-type Builder = BuilderType<{ states: {}, selectors: {}, model: {} }>;
+type Builder = BuilderType<{ states: {}, selectors: {}, model: StandardSchemaV1 }>;
 declare const bb: Builder;
 
 declare class BeepBoopComponent extends Component<{ actor: Actor<any> }> {
