@@ -117,7 +117,7 @@ type GuardType<R extends RawShape> = util.brand<{
 declare const REDUCE_BRAND: unique symbol;
 type ReduceType<R extends RawShape> = util.brand<{
   [REDUCE_BRAND]: R; // necessary for weird reasons
-  fn: (model: R['model']) => R['model'];
+  fn: (model: StandardSchemaV1.InferOutput<R['model']>) => StandardSchemaV1.InferOutput<R['model']>;
 }, 'reduce'>;
 type ExtraType<R extends RawShape> = GuardType<R> | ReduceType<R>;
 type SendFunction<R extends RawShape> = (event: GetAllEvents<R> | { type: GetAllEvents<R>;[key: string]: any }) => void;
@@ -237,14 +237,14 @@ type BuilderType<R extends RawShape> = {
     fn: (event: MachineEvent<RR>) => boolean
   ): GuardType<RR>;
   reduce<RR extends R>(
-    fn: (event: MachineEvent<RR>) => RR['model']
+    fn: (event: MachineEvent<RR>) => StandardSchemaV1.InferOutput<RR['model']>
   ): ReduceType<RR>;
   assign<RR extends R, K extends GetModelKeys<RR> = GetModelKeys<RR>>(
     key: K,
     fn: (event: MachineEvent<RR>) => GetModelKeyType<RR, K>
   ): ReduceType<RR>;
 
-  actor(builder: R): Actor<R>;
+  actor<BR extends RawShape>(builder: BuilderType<BR>): Actor<BR>;
   actor(): Actor<R>;
 }
 
