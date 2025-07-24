@@ -1,5 +1,5 @@
 ---
-"@matthewp/beepboop": major
+"@matthewp/beepboop": minor
 ---
 
 Remove actor.view() method and add bb.view(machine) for cleaner API
