@@ -250,7 +250,7 @@ type BuilderType<R extends RawShape> = {
 type Builder = BuilderType<{ states: {}, selectors: {}, model: StandardSchemaV1 }>;
 declare const bb: Builder;
 
-declare class BeepBoopComponent extends Component<{ actor: Actor<any> }> {
+interface BeepBoopComponent extends Component<{ actor: Actor<any> }> {
   draw(): void;
 }
 
