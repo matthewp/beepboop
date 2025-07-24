@@ -1,12 +1,13 @@
 import { bb } from '../../lib/bb.js';
+import * as s from '../../lib/schema.js';
 import { expectTypeOf } from 'expect-type';
 import { test } from 'node:test';
 
 test('attr() infers selectors and model props', () => {
   let machine = bb.selectors(['#count'] as const)
-    .model({
-      name: bb.string()
-    });
+    .model(s.object({
+      name: s.string()
+    }));
 
   type Type = typeof machine;
   type AttrParams = Parameters<Type['attr']>;

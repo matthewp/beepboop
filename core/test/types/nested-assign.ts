@@ -25,33 +25,33 @@ const machine1 = bb
   .always('test',
     // These should be valid assignments with correct types
     bb.assign('user.name', ({ data }) => {
-      expectTypeOf<string>(data);
+      expectTypeOf(data).toEqualTypeOf<string>();
       return 'John';
     }),
     bb.assign('user.age', ({ data }) => {
-      expectTypeOf<number>(data);
+      expectTypeOf(data).toEqualTypeOf<number>();
       return 30;
     }),
     bb.assign('user.profile.bio', ({ data }) => {
-      expectTypeOf<string>(data);
+      expectTypeOf(data).toEqualTypeOf<string>();
       return 'Bio';
     }),
     bb.assign('settings.theme', ({ data }) => {
-      expectTypeOf<string>(data);
+      expectTypeOf(data).toEqualTypeOf<string>();
       return 'dark';
     }),
     bb.assign('settings.notifications', ({ data }) => {
-      expectTypeOf<boolean>(data);
+      expectTypeOf(data).toEqualTypeOf<boolean>();
       return true;
     }),
     
     // Top-level assignments should still work
     bb.assign('user', ({ data }) => {
-      expectTypeOf<{ name: string; age: number; profile: { bio: string } }>(data);
+      expectTypeOf(data).toEqualTypeOf<{ name: string; age: number; profile: { bio: string } }>();
       return { name: 'Alice', age: 25, profile: { bio: 'Alice bio' } };
     }),
     bb.assign('settings', ({ data }) => {
-      expectTypeOf<{ theme: string; notifications: boolean }>(data);
+      expectTypeOf(data).toEqualTypeOf<{ theme: string; notifications: boolean }>();
       return { theme: 'light', notifications: false };
     })
   );
@@ -74,16 +74,16 @@ const machine2 = bb
   .states(['idle'])
   .always('test',
     bb.assign('profile.personal.firstName', ({ data }) => {
-      expectTypeOf<string>(data);
+      expectTypeOf(data).toEqualTypeOf<string>();
       return 'Jane';
     }),
     bb.assign('profile.personal.lastName', ({ data }) => {
-      expectTypeOf<string>(data);
+      expectTypeOf(data).toEqualTypeOf<string>();
       return 'Doe';
     }),
     bb.assign('profile.preferences.theme', ({ data }) => {
-      expectTypeOf<'light' | 'dark'>(data);
-      return 'dark';
+      expectTypeOf(data).toEqualTypeOf<'light' | 'dark'>();
+      return data;
     })
   );
 
@@ -110,18 +110,12 @@ const machine4 = bb
   .model(nestedSchema)
   .states(['idle'])
   .always('test',
-    bb.assign('user.name', ({ data }) => {
-      // @ts-expect-error - should return string, not number
-      return 42;
-    }),
-    bb.assign('user.age', ({ data }) => {
-      // @ts-expect-error - should return number, not string
-      return 'thirty';
-    }),
-    bb.assign('settings.notifications', ({ data }) => {
-      // @ts-expect-error - should return boolean, not string
-      return 'yes';
-    })
+    // @ts-expect-error - should return string, not number
+    bb.assign('user.name', ({ data }) => 42),
+    // @ts-expect-error - should return number, not string
+    bb.assign('user.age', ({ data }) => 'thirty'),
+    // @ts-expect-error - should return boolean, not string
+    bb.assign('settings.notifications', ({ data }) => 'yes')
   );
 
 // Test mixed schemas
@@ -139,11 +133,11 @@ const machine5 = bb
   .states(['idle'])
   .always('test',
     bb.assign('beepboop.name', ({ data }) => {
-      expectType<string>(data);
+      expectTypeOf(data).toEqualTypeOf<string>();
       return 'BeepBoop';
     }),
     bb.assign('valibot.email', ({ data }) => {
-      expectType<string>(data);
+      expectTypeOf(data).toEqualTypeOf<string>();
       return 'test@example.com';
     })
   );
