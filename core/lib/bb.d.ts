@@ -226,6 +226,7 @@ type BuilderType<R extends RawShape> = {
     event: E,
     ...extras: ExtraType<R>[]
   ): BuilderType<AddAlwaysEvent<R, E>>;
+  init(...extras: ExtraType<R>[]): BuilderType<R>;
   invoke<S extends GetStates<R>>(
     state: S,
     fn: (event: MachineEvent<R>) => Promise<any>

@@ -41,28 +41,51 @@ bb.model(s.object({
 
 Models start empty and are populated using immediate transitions from a setup state.
 
-### 2. States
+### 2. Initialization
+
+Use `.init()` to initialize your model properties when the machine starts:
+
+```typescript
+bb.model(v.object({
+  count: v.number(),
+  user: v.object({
+    name: v.string(),
+    profile: v.object({
+      age: v.number()
+    })
+  })
+}))
+.init(
+  bb.assign('count', () => 0),
+  bb.assign('user.name', () => 'Anonymous'),
+  bb.assign('user.profile.age', () => 18)
+)
+```
+
+The `.init()` method accepts the same action types as transitions (`bb.assign()`, custom reducers, etc.) but ignores guards since initialization should always happen. Init effects run during the hidden initial state transition before entering your first state.
+
+### 3. States
 Define the possible states your machine can be in:
 
 ```typescript
 .states(['idle', 'loading', 'success', 'error'])
 ```
 
-### 3. Events
+### 4. Events
 Define events that can trigger state transitions:
 
 ```typescript
 .events('idle', ['load', 'reset'])
 ```
 
-### 4. Transitions
+### 5. Transitions
 Define how your machine moves between states:
 
 ```typescript
 .transition('idle', 'load', 'loading')
 ```
 
-### 5. Guards
+### 6. Guards
 Add conditions to transitions:
 
 ```typescript
@@ -74,7 +97,7 @@ Add conditions to transitions:
 )
 ```
 
-### 6. Actions
+### 7. Actions
 Update your model or perform side effects:
 
 ```typescript
@@ -85,7 +108,7 @@ Update your model or perform side effects:
 )
 ```
 
-### 7. Props
+### 8. Props
 Define and validate props passed to your components:
 
 ```typescript

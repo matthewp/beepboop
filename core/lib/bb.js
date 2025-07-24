@@ -271,6 +271,26 @@ function build(builder) {
   if (effects[LIFECYCLE_EFFECT] && typeof window !== 'undefined') {
     initialArgs.push(mutateAction(effects[LIFECYCLE_EFFECT], ''));
   }
+  
+  // Add init effects if any were defined
+  if (states[BEEPBOOP_INITIAL_STATE]) {
+    for (let dest in states[BEEPBOOP_INITIAL_STATE].immediates) {
+      for (let extras of states[BEEPBOOP_INITIAL_STATE].immediates[dest]) {
+        for (let type of extras) {
+          if (AssignType.isPrototypeOf(type)) {
+            let key = type.key;
+            initialArgs.push(reduce(type.reducer.bind(type)));
+            // Always add view effect if there's a view function
+            if (builder.viewFn) {
+              initialArgs.push(mutateAction([viewEffect()], key));
+            }
+          } else {
+            initialArgs.push(type);
+          }
+        }
+      }
+    }
+  }
 
   machineDefn[BEEPBOOP_INITIAL_STATE] = createState(immediate(builder.initial, ...initialArgs));
 
@@ -311,6 +331,8 @@ function appendStates(builder, states) {
     builder.propsSchema
   );
 }
+
+let GuardType = Object.getPrototypeOf(guard(() => {}));
 
 let AssignType = {
   reducer(ctx, ev) {
@@ -424,6 +446,11 @@ let Builder = {
       newAlwaysTransitions,
       this.propsSchema
     );
+  },
+  init(...args) {
+    // Filter out guards since they don't make sense for initialization
+    const filteredArgs = args.filter(arg => !GuardType.isPrototypeOf(arg));
+    return this.immediate(BEEPBOOP_INITIAL_STATE, '*', ...filteredArgs);
   },
   invoke(state, fn) {
     let desc = extendState(this, state);
