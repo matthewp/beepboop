@@ -1,5 +1,17 @@
 # @matthewp/beepboop
 
+## 0.5.1
+
+### Patch Changes
+
+- 837c2bb: Fix deliver property types and improve form handling documentation
+
+  - Add missing `deliver` property to view() method TypeScript types
+  - Add comprehensive Form Handling Patterns section with complete examples
+  - Enhance deliver() documentation with event flow explanations
+  - Include anti-patterns and preferred patterns for form handling
+  - Address migration guidance for developers coming from React patterns
+
 ## 0.5.0
 
 ### Minor Changes
