@@ -374,12 +374,6 @@ let Builder = {
         invoke: null,
       };
     }
-    // Always ensure BEEPBOOP_INITIAL_STATE exists
-    desc[BEEPBOOP_INITIAL_STATE] = {
-      events: {},
-      immediates: {},
-      invoke: null,
-    };
     return createBuilder(names[0], this.model, desc, this.effects, this.viewFn, this.alwaysTransitions, this.propsSchema);
   },
   events(state, events) {
@@ -422,11 +416,20 @@ let Builder = {
   action(fn) {
     return action(h(fn));
   },
-  effect(key, fn) {
-    return createBuilder(this.initial, this.model, this.states, {
-      ...this.effects,
-      [key]: mergeArray(this.effects[key], effect(fn)),
-    }, this.viewFn, this.alwaysTransitions, this.propsSchema);
+  effect(keyOrFn, fn) {
+    if (typeof keyOrFn === 'function') {
+      // Lifecycle effect - only run in browser
+      if (typeof window !== 'undefined') {
+        return this.init(this.action(keyOrFn));
+      }
+      return this;
+    } else {
+      // Model effect
+      return createBuilder(this.initial, this.model, this.states, {
+        ...this.effects,
+        [keyOrFn]: mergeArray(this.effects[keyOrFn], effect(fn)),
+      }, this.viewFn, this.alwaysTransitions, this.propsSchema);
+    }
   },
   always(event, ...args) {
     const newAlwaysTransitions = mergeArray(this.alwaysTransitions, { event, args });
@@ -441,9 +444,17 @@ let Builder = {
     );
   },
   init(...args) {
-    // Filter out guards since they don't make sense for initialization
     const filteredArgs = args.filter(arg => !GuardType.isPrototypeOf(arg));
-    return this.immediate(BEEPBOOP_INITIAL_STATE, this.initial, ...filteredArgs);
+    let builder = this;
+    
+    if (!(BEEPBOOP_INITIAL_STATE in this.states)) {
+      builder = appendStates(this, {
+        ...this.states,
+        [BEEPBOOP_INITIAL_STATE]: { events: {}, immediates: {}, invoke: null }
+      });
+    }
+    
+    return builder.immediate(BEEPBOOP_INITIAL_STATE, this.initial, ...filteredArgs);
   },
   invoke(state, fn) {
     let desc = extendState(this, state);

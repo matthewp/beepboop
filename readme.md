@@ -477,39 +477,59 @@ Define an event that can be handled in any state without transitioning. The mach
 .always('reset', bb.assign('count', () => 0))
 ```
 
-### `.init(...actions)`
-Define initialization actions that run once when the machine starts. Use this for setting up external resources like event listeners, timers, or WebSocket connections, as well as initializing model properties.
+### `.effect(fn)`
+Define a lifecycle effect that runs once when the machine starts (client-side only). Use this for setting up external event sources like WebSocket connections, timers, or browser event listeners that need to interact with your state machine.
 
 ```typescript
 // Setup external event listeners
-.init(
-  bb.action((event) => {
-    const onOnline = () => event.send('connect');
-    const onOffline = () => event.send('disconnect');
-    
-    addEventListener('online', onOnline);
-    addEventListener('offline', onOffline);
-    
-    // Return cleanup function
-    return () => {
-      removeEventListener('online', onOnline);
-      removeEventListener('offline', onOffline);
-    };
-  })
-)
+.effect((event) => {
+  const onOnline = () => event.send('connect');
+  const onOffline = () => event.send('disconnect');
+  
+  addEventListener('online', onOnline);
+  addEventListener('offline', onOffline);
+  
+  // Return cleanup function
+  return () => {
+    removeEventListener('online', onOnline);
+    removeEventListener('offline', onOffline);
+  };
+})
 
 // Setup timers
-.init(
-  bb.action((event) => {
-    const interval = setInterval(() => event.send('tick'), 1000);
-    return () => clearInterval(interval);
-  })
-)
+.effect((event) => {
+  const interval = setInterval(() => event.send('tick'), 1000);
+  return () => clearInterval(interval);
+})
 
+// Setup WebSocket connection
+.effect((event) => {
+  const ws = new WebSocket('ws://localhost:8080');
+  ws.onmessage = (msg) => event.send('message', JSON.parse(msg.data));
+  ws.onopen = () => event.send('connected');
+  ws.onclose = () => event.send('disconnected');
+  
+  return () => ws.close();
+})
+```
+
+### `.init(...actions)`
+Define initialization actions that run once when the machine starts. Use this for setting up initial model data and any startup logic that doesn't involve external event sources.
+
+```typescript
 // Initialize model properties
 .init(
   bb.assign('count', () => 0),
-  bb.assign('user', () => ({ name: '', email: '' }))
+  bb.assign('user', () => ({ name: '', email: '' })),
+  bb.assign('settings', () => ({ theme: 'light', notifications: true }))
+)
+
+// Load initial data from localStorage
+.init(
+  bb.assign('user', () => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : { name: '', email: '' };
+  })
 )
 ```
 
