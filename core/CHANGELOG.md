@@ -1,5 +1,19 @@
 # @matthewp/beepboop
 
+## 0.6.0
+
+### Minor Changes
+
+- a20118b: Add bb.action() method and remove lifecycle effects
+
+  Added bb.action() as a thin wrapper around robot3's action function for consistent API. Removed lifecycle effects (.effect(fn)) in favor of using bb.init() with bb.action(). Updated documentation to show the new initialization pattern. Also optimized view rendering to only trigger once per transition instead of once per assign.
+
+### Patch Changes
+
+- 8c1c7de: Fix bb.init() state handling bugs
+
+  Fixed two issues with bb.init() method: ensured BEEPBOOP_INITIAL_STATE is always available by creating it in states() method, and corrected the destination state from invalid '\*' to the proper initial state.
+
 ## 0.5.1
 
 ### Patch Changes
