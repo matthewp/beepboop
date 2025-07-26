@@ -477,30 +477,40 @@ Define an event that can be handled in any state without transitioning. The mach
 .always('reset', bb.assign('count', () => 0))
 ```
 
-### `.effect(fn)`
-Define a lifecycle effect that runs once when the machine starts (client-side only). Use this for setting up external resources like event listeners, timers, or WebSocket connections.
+### `.init(...actions)`
+Define initialization actions that run once when the machine starts. Use this for setting up external resources like event listeners, timers, or WebSocket connections, as well as initializing model properties.
 
 ```typescript
 // Setup external event listeners
-.effect((event, send) => {
-  const onOnline = () => send('connect');
-  const onOffline = () => send('disconnect');
-  
-  addEventListener('online', onOnline);
-  addEventListener('offline', onOffline);
-  
-  // Return cleanup function
-  return () => {
-    removeEventListener('online', onOnline);
-    removeEventListener('offline', onOffline);
-  };
-})
+.init(
+  bb.action((event) => {
+    const onOnline = () => event.send('connect');
+    const onOffline = () => event.send('disconnect');
+    
+    addEventListener('online', onOnline);
+    addEventListener('offline', onOffline);
+    
+    // Return cleanup function
+    return () => {
+      removeEventListener('online', onOnline);
+      removeEventListener('offline', onOffline);
+    };
+  })
+)
 
 // Setup timers
-.effect((event, send) => {
-  const interval = setInterval(() => send('tick'), 1000);
-  return () => clearInterval(interval);
-})
+.init(
+  bb.action((event) => {
+    const interval = setInterval(() => event.send('tick'), 1000);
+    return () => clearInterval(interval);
+  })
+)
+
+// Initialize model properties
+.init(
+  bb.assign('count', () => 0),
+  bb.assign('user', () => ({ name: '', email: '' }))
+)
 ```
 
 ### `bb.guard(predicateFn)`

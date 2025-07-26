@@ -183,9 +183,6 @@ type BuilderType<R extends RawShape> = {
     key: K,
     fn: (event: MachineEvent<R>) => void
   ): BuilderType<R>;
-  effect(
-    fn: (event: MachineEvent<R>) => void | (() => void)
-  ): BuilderType<R>;
   spawn<S extends GetSelectors<R> = GetSelectors<R>, K extends GetModelKeys<R> = GetModelKeys<R>>(
     sel: S,
     key: K,
@@ -244,6 +241,9 @@ type BuilderType<R extends RawShape> = {
     key: K,
     fn: (event: MachineEvent<RR>) => GetModelKeyType<RR, K>
   ): ReduceType<RR>;
+  action<RR extends R>(
+    fn: (event: MachineEvent<RR>) => void | (() => void)
+  ): any;
 
   actor<BR extends RawShape>(builder: BuilderType<BR>): Actor<BR>;
   actor(): Actor<R>;

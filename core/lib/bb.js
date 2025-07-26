@@ -13,7 +13,6 @@ import { createElement, render, Component as PreactComponent } from 'preact';
 
 // Constants
 const BEEPBOOP_INITIAL_STATE = 'beepboop.initial';
-const LIFECYCLE_EFFECT = Symbol('lifecycle');
 
 // Util
 let valueEnumerable = (value) => ({ enumerable: true, value });
@@ -45,18 +44,13 @@ function validateProps(props, schema) {
 }
 
 let effect = fn => (_r, _v, ev) => fn(ev);
-let viewEffect = () => (_r, _v, ev) => {
+let viewEffect = () => (root, model, ev) => {
   // Re-render the view with updated model
-  let component = ev.service.context.root;
-  if (component.actor.service) {
-    component.draw();
-  }
+  root.draw(model);
 };
-let mutateAction = (fns, key) =>
+let mutateAction = (fn) =>
   action((ctx, ev) => {
-    for (let fn of fns) {
-      fn(ctx.root, ctx.model[key], ev);
-    }
+    fn(ctx.root, ctx.model, ev);
   });
 
 
@@ -120,17 +114,17 @@ class Component extends PreactComponent {
     return event => this.actor.sendEvent(name, event);
   };
 
-  callView() {
+  callView(model) {
     return this.actor.viewFn({
       deliver: this.deliver,
-      model: this.actor.service.context.model,
+      model: model ?? this.actor.service.context.model,
       send: this.actor.send
     });
   }
 
-  draw() {
+  draw(model) {
     this.setState({
-      view: this.callView()
+      view: this.callView(model)
     });
   }
 
@@ -216,17 +210,19 @@ function build(builder) {
       let eventDetails = state.events[evName];
       for (let [dest, extras] of eventDetails) {
         let args = [];
+        let needsViewAction = false;
         for (let type of extras) {
           if (AssignType.isPrototypeOf(type)) {
             let key = type.key;
             args.push(reduce(type.reducer.bind(type)));
-            // Always add view effect if there's a view function
-            if (builder.viewFn) {
-              args.push(mutateAction([viewEffect()], key));
-            }
+            needsViewAction = true;
           } else {
             args.push(type);
           }
+        }
+        // Add view effect once at the end if needed
+        if (needsViewAction && builder.viewFn) {
+          args.push(mutateAction(viewEffect()));
         }
         stateArgs.push(transition(evName, dest, ...args));
       }
@@ -234,6 +230,7 @@ function build(builder) {
     for (let dest in state.immediates) {
       for (let extras of state.immediates[dest]) {
         let args = [];
+        let needsViewAction = false;
         if (name === builder.initial) {
           args.push(reduce(function(ctx, ev) {
             ev.service = this;
@@ -244,13 +241,14 @@ function build(builder) {
           if (AssignType.isPrototypeOf(type)) {
             let key = type.key;
             args.push(reduce(type.reducer.bind(type)));
-            // Always add view effect if there's a view function
-            if (builder.viewFn) {
-              args.push(mutateAction([viewEffect()], key));
-            }
+            needsViewAction = true;
           } else {
             args.push(type);
           }
+        }
+        // Add view effect once at the end if needed
+        if (needsViewAction && builder.viewFn) {
+          args.push(mutateAction(viewEffect()));
         }
         stateArgs.push(immediate(dest, ...args));
       }
@@ -268,27 +266,25 @@ function build(builder) {
 
   // Add the initial state that immediately transitions to the builder's initial state
   let initialArgs = [];
-  if (effects[LIFECYCLE_EFFECT] && typeof window !== 'undefined') {
-    initialArgs.push(mutateAction(effects[LIFECYCLE_EFFECT], ''));
-  }
   
   // Add init effects if any were defined
   if (states[BEEPBOOP_INITIAL_STATE]) {
+    let needsViewAction = false;
     for (let dest in states[BEEPBOOP_INITIAL_STATE].immediates) {
       for (let extras of states[BEEPBOOP_INITIAL_STATE].immediates[dest]) {
         for (let type of extras) {
           if (AssignType.isPrototypeOf(type)) {
-            let key = type.key;
             initialArgs.push(reduce(type.reducer.bind(type)));
-            // Always add view effect if there's a view function
-            if (builder.viewFn) {
-              initialArgs.push(mutateAction([viewEffect()], key));
-            }
+            needsViewAction = true;
           } else {
             initialArgs.push(type);
           }
         }
       }
+    }
+    // Add view effect once at the end if needed
+    if (needsViewAction && builder.viewFn) {
+      initialArgs.push(mutateAction(viewEffect()));
     }
   }
 
@@ -423,22 +419,13 @@ let Builder = {
       fn: valueEnumerable(fn),
     });
   },
-  effect(keyOrFn, fn) {
-    let key, effectFn;
-
-    if (typeof keyOrFn === 'function') {
-      // Lifecycle effect - use special symbol key
-      key = LIFECYCLE_EFFECT;
-      effectFn = keyOrFn;
-    } else {
-      // Model effect - use provided key
-      key = keyOrFn;
-      effectFn = fn;
-    }
-
+  action(fn) {
+    return action(h(fn));
+  },
+  effect(key, fn) {
     return createBuilder(this.initial, this.model, this.states, {
       ...this.effects,
-      [key]: mergeArray(this.effects[key], effect(effectFn)),
+      [key]: mergeArray(this.effects[key], effect(fn)),
     }, this.viewFn, this.alwaysTransitions, this.propsSchema);
   },
   always(event, ...args) {
