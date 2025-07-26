@@ -378,6 +378,12 @@ let Builder = {
         invoke: null,
       };
     }
+    // Always ensure BEEPBOOP_INITIAL_STATE exists
+    desc[BEEPBOOP_INITIAL_STATE] = {
+      events: {},
+      immediates: {},
+      invoke: null,
+    };
     return createBuilder(names[0], this.model, desc, this.effects, this.viewFn, this.alwaysTransitions, this.propsSchema);
   },
   events(state, events) {
@@ -450,7 +456,7 @@ let Builder = {
   init(...args) {
     // Filter out guards since they don't make sense for initialization
     const filteredArgs = args.filter(arg => !GuardType.isPrototypeOf(arg));
-    return this.immediate(BEEPBOOP_INITIAL_STATE, '*', ...filteredArgs);
+    return this.immediate(BEEPBOOP_INITIAL_STATE, this.initial, ...filteredArgs);
   },
   invoke(state, fn) {
     let desc = extendState(this, state);
