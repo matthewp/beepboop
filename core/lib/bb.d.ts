@@ -195,6 +195,7 @@ type BuilderType<R extends RawShape> = {
     fn: (props: {
       model: { [k in GetModelKeys<R>]: GetModelKeyType<R, k> };
       send: SendFunction<R>;
+      deliver: (name: GetAllEvents<R>) => (event: Event) => void;
     }) => any
   ): BuilderType<R>;
   view<M extends RawShape>(machine: M & { viewFn: any }): (props?: any) => Component;

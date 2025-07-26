@@ -610,6 +610,33 @@ Define the UI component that renders based on the current state and model. The c
 })
 ```
 
+#### The `deliver()` Function
+The `deliver()` function returns an event handler that can be directly attached to DOM events. It automatically passes the DOM event through the state machine where it becomes available as `domEvent` in transitions, guards, and invoke functions.
+
+```typescript
+// ✅ Preferred pattern - deliver returns event handler
+.view(({ deliver }) => (
+  <form onSubmit={deliver('submit')}>
+    <input name="email" />
+    <button type="submit">Submit</button>
+  </form>
+))
+
+// Access the DOM event in invoke functions
+.invoke('submitting', ({ domEvent }) => {
+  domEvent.preventDefault();
+  const formData = new FormData(domEvent.target);
+  const email = formData.get('email');
+  return fetch('/api/submit', { method: 'POST', body: formData });
+})
+```
+
+**Key Benefits:**
+- **Declarative**: Views stay pure and declarative 
+- **Event Flow**: DOM events flow naturally through the state machine
+- **Type Safety**: `domEvent` is properly typed in event handlers
+- **Less Boilerplate**: Eliminates custom event handler functions in views
+
 ### `bb.actor(machine)`
 Create an actor instance from your machine definition. Actors are the runtime instances that manage state and handle events.
 
@@ -653,6 +680,209 @@ const Counter = bb.view(counterMachine);
       <Counter />
     </div>
   );
+})
+```
+
+## Form Handling Patterns
+
+BeepBoop provides elegant patterns for handling forms that emphasize declarative views and state machine-driven logic. Forms are handled by delivering DOM events to the state machine where they can be processed in invoke functions and transitions.
+
+### Basic Form Submission
+
+```typescript
+import * as v from 'valibot';
+
+const formMachine = bb
+  .model(v.object({
+    email: v.string(),
+    submitting: v.boolean(),
+    error: v.string()
+  }))
+  .states(['idle', 'submitting', 'success', 'error'])
+  .init(
+    bb.assign('submitting', () => false),
+    bb.assign('error', () => '')
+  )
+  .events('idle', ['submit'])
+  .events('error', ['submit', 'reset'])
+  .events('success', ['reset'])
+  .transition('idle', 'submit', 'submitting')
+  .transition('error', 'submit', 'submitting') 
+  .transition('error', 'reset', 'idle')
+  .transition('success', 'reset', 'idle')
+  .invoke('submitting', ({ domEvent }) => {
+    domEvent.preventDefault();
+    const formData = new FormData(domEvent.target);
+    const email = formData.get('email');
+    
+    return fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+  })
+  .transition('submitting', 'done', 'success',
+    bb.assign('email', ({ data }) => data.email)
+  )
+  .transition('submitting', 'error', 'error',
+    bb.assign('error', ({ data }) => data.message || 'Submission failed')
+  )
+  .view(({ model, deliver }) => (
+    <form onSubmit={deliver('submit')}>
+      <input 
+        type="email" 
+        name="email"
+        placeholder="Enter your email"
+        required 
+      />
+      <button type="submit" disabled={model.submitting}>
+        {model.submitting ? 'Submitting...' : 'Subscribe'}
+      </button>
+      {model.error && <p style="color: red">{model.error}</p>}
+      {model.state === 'success' && (
+        <p style="color: green">Subscribed successfully!</p>
+      )}
+    </form>
+  ));
+```
+
+### Form Validation with Guards
+
+Use guards to validate form data before allowing state transitions:
+
+```typescript
+.transition('idle', 'submit', 'submitting',
+  bb.guard(({ domEvent }) => {
+    const formData = new FormData(domEvent.target);
+    const email = formData.get('email');
+    return email && email.includes('@');
+  })
+)
+.transition('idle', 'submit', 'error',
+  bb.assign('error', () => 'Please enter a valid email address')
+)
+```
+
+### Multiple Form Fields
+
+Access individual form fields in invoke functions and transitions:
+
+```typescript
+.invoke('processing', ({ domEvent }) => {
+  const formData = new FormData(domEvent.target);
+  
+  const userData = {
+    name: formData.get('name'),
+    email: formData.get('email'),
+    age: parseInt(formData.get('age')),
+    newsletter: formData.has('newsletter')
+  };
+  
+  return fetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  });
+})
+```
+
+### Real-time Input Handling
+
+Handle input changes for real-time validation or updates:
+
+```typescript
+.events('idle', ['input', 'submit'])
+.always('input', 
+  bb.assign('searchQuery', ({ domEvent }) => 
+    (domEvent.target as HTMLInputElement).value
+  )
+)
+.view(({ model, deliver }) => (
+  <div>
+    <input 
+      type="text"
+      onInput={deliver('input')}
+      placeholder="Search..."
+    />
+    <p>Searching for: {model.searchQuery}</p>
+  </div>
+))
+```
+
+### Common Anti-Patterns to Avoid
+
+#### ❌ Don't Store Form Data in State
+```typescript
+// Avoid storing ephemeral form data in model state
+.model(v.object({ formData: v.any() }))
+.transition('idle', 'submit', 'loading', 
+  bb.assign('formData', ({ domEvent }) => new FormData(domEvent.target))
+)
+```
+
+#### ❌ Don't Write Custom Event Handlers in Views
+```typescript
+// Avoid custom event handling logic in views
+.view(({ deliver }) => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    deliver('submit', formData);
+  };
+  return <form onSubmit={handleSubmit}>;
+})
+```
+
+#### ❌ Don't Mix Async Logic with View Logic
+```typescript
+// Avoid async operations in views
+.view(({ model, send }) => {
+  const handleSubmit = async (e) => {
+    const result = await fetch('/api');
+    send('result', result);
+  };
+})
+```
+
+### ✅ Preferred Patterns
+
+#### Store Only Persistent State
+```typescript
+// Store only what needs to persist across renders
+.model(v.object({
+  submitting: v.boolean(),
+  error: v.string(), 
+  lastSubmittedEmail: v.string()
+}))
+```
+
+#### Use deliver() Directly
+```typescript
+// Let deliver() handle DOM events automatically
+.view(({ deliver }) => (
+  <form onSubmit={deliver('submit')}>
+))
+```
+
+#### Keep Views Declarative
+```typescript
+// Views should only describe UI, not contain logic
+.view(({ model, deliver }) => (
+  <form onSubmit={deliver('submit')}>
+    <input type="email" name="email" />
+    <button disabled={model.submitting}>Submit</button>
+  </form>
+))
+```
+
+#### Handle Logic in State Machine
+```typescript
+// All business logic belongs in the state machine
+.invoke('submitting', ({ domEvent }) => {
+  // Form processing, validation, API calls happen here
+  domEvent.preventDefault();
+  const formData = new FormData(domEvent.target);
+  return processForm(formData);
 })
 ```
 
