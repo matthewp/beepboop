@@ -1,5 +1,23 @@
 # @matthewp/beepboop
 
+## 0.7.0
+
+### Minor Changes
+
+- 5fedce5: Restore lifecycle effects and improve init() behavior
+
+  Restored .effect(fn) for setting up external event sources like WebSocket connections, timers, and browser event listeners. Made init() additive so multiple calls merge actions instead of overwriting. Clarified documentation to distinguish between .effect(fn) for external event sources and .init() for initial data setup.
+
+### Patch Changes
+
+- f92ad1b: Add automated test runner for QUnit browser tests
+
+  Added Playwright-based test runner that automatically runs QUnit tests in headless browser. Includes npm run test:browser script for CI/automation and integrates with existing wireit-based test command.
+
+- cfb7cac: Improve component props typing
+
+  Fixed bb.view(machine) to return proper Preact Component<Props> type with correct props schema typing instead of generic Component. This provides better TypeScript support and IDE integration when using BeepBoop components.
+
 ## 0.6.0
 
 ### Minor Changes
