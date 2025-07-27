@@ -198,7 +198,7 @@ type BuilderType<R extends RawShape> = {
       deliver: (name: GetAllEvents<R>) => (event: Event) => void;
     }) => any
   ): BuilderType<R>;
-  view<M extends RawShape>(machine: M & { viewFn: any }): (props?: any) => Component;
+  view<M extends RawShape>(machine: M & { viewFn: any }): Component<GetPropsType<M>>;
 
   // Data model
   model<S extends StandardSchemaV1>(schema: S): BuilderType<AddModel<R, S>>;
