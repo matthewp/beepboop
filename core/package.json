@@ -14,6 +14,7 @@
   "scripts": {
     "test:types": "wireit",
     "test:dev": "wireit",
+    "test:node": "wireit",
     "test": "wireit"
   },
   "repository": {
@@ -43,6 +44,8 @@
     "esbuild": "^0.17.10",
     "esbuild-register": "^3.4.2",
     "expect-type": "^0.15.0",
+    "happy-dom": "^18.0.1",
+    "qunit": "^2.24.1",
     "typescript": "^5.4.5",
     "valibot": "^1.1.0",
     "vite": "^5.4.19"
@@ -58,8 +61,19 @@
     },
     "test": {
       "dependencies": [
-        "test:types"
+        "test:types",
+        "test:node"
       ]
+    },
+    "test:node": {
+      "command": "node test-node.js",
+      "files": [
+        "test/**/*",
+        "lib/**/*",
+        "test-node.js",
+        "test-setup.js"
+      ],
+      "output": []
     },
     "test:dev": {
       "command": "vite test --host",
