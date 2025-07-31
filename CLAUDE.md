@@ -53,6 +53,10 @@ const machine = bb
 - Check README.md for any specific build, test, or development commands
 - Look for package.json scripts if development commands are needed
 
+### Dependencies
+- BeepBoop uses the **Robot** state machine library (npm package: `robot3`)
+- When referring to the library, call it "Robot" not "robot3" - robot3 is just the npm package name
+
 ### Creating Changesets
 When adding new features or making changes, create a changeset to document the change:
 
