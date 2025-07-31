@@ -10,6 +10,7 @@ import './test/nested-assign.test.js';
 import './test/props.test.js';
 import './test/standard-schema.test.js';
 import './test/invoke.test.js';
+import './test/child-actors.test.js';
 
 // Setup callbacks to see test progress
 QUnit.testDone((details) => {
